@@ -5,7 +5,19 @@
 class IBaseInterface;
 class IExamInterface;
 
-class Plugin :public IExamPlugin
+namespace Elite 
+{
+	class Blackboard;
+	class IDecisionMaking;
+}
+
+class Seek;
+class Flee;
+class SteeringBehaviour;
+
+// using namespace Elite;
+
+class Plugin : public IExamPlugin
 {
 public:
 	Plugin() {};
@@ -21,6 +33,9 @@ public:
 	SteeringPlugin_Output UpdateSteering(float dt) override;
 	void Render(float dt) const override;
 
+	void SetToSeek();
+	void SetToFlee();
+
 private:
 	//Interface, used to request data from/perform actions with the AI Framework
 	IExamInterface* m_pInterface = nullptr;
@@ -35,6 +50,15 @@ private:
 	float m_AngSpeed = 0.f; //Demo purpose
 
 	UINT m_InventorySlot = 0;
+
+	// OWN IMPLEMENTATIONS
+	Elite::Blackboard* m_pBlackboard;
+	Elite::Blackboard* CreateBlackboard();
+	SteeringBehaviour* m_pCurrentSteeringBehaviour;
+	Seek* m_pSeek;
+	Flee* m_pFlee;
+
+	Elite::IDecisionMaking* m_pDecisionMaking;
 };
 
 //ENTRY

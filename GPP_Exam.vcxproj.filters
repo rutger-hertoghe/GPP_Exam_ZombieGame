@@ -6,6 +6,9 @@
     <ClCompile Include="EBehaviorTree.cpp">
       <Filter>Framework Files</Filter>
     </ClCompile>
+    <ClCompile Include="SteeringBehaviours.cpp">
+      <Filter>Own Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Plugin.h" />
@@ -18,6 +21,12 @@
     </ClInclude>
     <ClInclude Include="EBlackboard.h">
       <Filter>Framework Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SteeringBehaviours.h">
+      <Filter>Own Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BT_Behaviors.h">
+      <Filter>Own Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

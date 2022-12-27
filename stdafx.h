@@ -39,3 +39,4 @@
 #pragma endregion
 
 #define SAFE_DELETE(p) if (p) { delete (p); (p) = nullptr; }
+#define VAR_NAME(Variable) (#Variable)
