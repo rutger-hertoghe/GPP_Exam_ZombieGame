@@ -11,17 +11,18 @@ namespace Elite
 	class IDecisionMaking;
 }
 
-class Seek;
-class Flee;
-class SteeringBehaviour;
+class AgentMemory;
+class AgentFOV;
+class AgentMovement;
 
 // using namespace Elite;
 
 class Plugin : public IExamPlugin
 {
 public:
+
 	Plugin() {};
-	virtual ~Plugin() {};
+	virtual ~Plugin();
 
 	void Initialize(IBaseInterface* pInterface, PluginInfo& info) override;
 	void DllInit() override;
@@ -33,16 +34,10 @@ public:
 	SteeringPlugin_Output UpdateSteering(float dt) override;
 	void Render(float dt) const override;
 
-	void SetToSeek();
-	void SetToFlee();
-
 private:
 	//Interface, used to request data from/perform actions with the AI Framework
 	IExamInterface* m_pInterface = nullptr;
-	std::vector<HouseInfo> GetHousesInFOV() const;
-	std::vector<EntityInfo> GetEntitiesInFOV() const;
 
-	Elite::Vector2 m_Target = {};
 	bool m_CanRun = false; //Demo purpose
 	bool m_GrabItem = false; //Demo purpose
 	bool m_UseItem = false; //Demo purpose
@@ -52,11 +47,12 @@ private:
 	UINT m_InventorySlot = 0;
 
 	// OWN IMPLEMENTATIONS
-	Elite::Blackboard* m_pBlackboard;
+	// Elite::Blackboard* m_pBlackboard;
 	Elite::Blackboard* CreateBlackboard();
-	SteeringBehaviour* m_pCurrentSteeringBehaviour;
-	Seek* m_pSeek;
-	Flee* m_pFlee;
+	AgentMemory* m_pAgentMemory;
+	AgentFOV* m_pAgentFOV;
+	AgentMovement* m_pAgentMovement;
+	Elite::Vector2 m_Target;
 
 	Elite::IDecisionMaking* m_pDecisionMaking;
 };

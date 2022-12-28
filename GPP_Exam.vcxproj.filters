@@ -6,8 +6,23 @@
     <ClCompile Include="EBehaviorTree.cpp">
       <Filter>Framework Files</Filter>
     </ClCompile>
+    <ClCompile Include="AgentMemory.cpp">
+      <Filter>Own Files\AgentMemory</Filter>
+    </ClCompile>
+    <ClCompile Include="ExplorationMemory.cpp">
+      <Filter>Own Files\AgentMemory</Filter>
+    </ClCompile>
     <ClCompile Include="SteeringBehaviours.cpp">
+      <Filter>Own Files\Movement</Filter>
+    </ClCompile>
+    <ClCompile Include="AgentMovement.cpp">
+      <Filter>Own Files\Movement</Filter>
+    </ClCompile>
+    <ClCompile Include="AgentFOV.cpp">
       <Filter>Own Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HouseMemory.cpp">
+      <Filter>Own Files\AgentMemory</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -22,11 +37,29 @@
     <ClInclude Include="EBlackboard.h">
       <Filter>Framework Files</Filter>
     </ClInclude>
-    <ClInclude Include="SteeringBehaviours.h">
-      <Filter>Own Files</Filter>
-    </ClInclude>
     <ClInclude Include="BT_Behaviors.h">
       <Filter>Own Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomStructs.h">
+      <Filter>Own Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AgentMemory.h">
+      <Filter>Own Files\AgentMemory</Filter>
+    </ClInclude>
+    <ClInclude Include="ExplorationMemory.h">
+      <Filter>Own Files\AgentMemory</Filter>
+    </ClInclude>
+    <ClInclude Include="SteeringBehaviours.h">
+      <Filter>Own Files\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="AgentMovement.h">
+      <Filter>Own Files\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="AgentFOV.h">
+      <Filter>Own Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HouseMemory.h">
+      <Filter>Own Files\AgentMemory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -35,6 +68,12 @@
     </Filter>
     <Filter Include="Own Files">
       <UniqueIdentifier>{ada79c0b-a313-493f-8818-78d33647a35d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Own Files\AgentMemory">
+      <UniqueIdentifier>{15bd2148-acd6-4161-93d9-9cd162fef3c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Own Files\Movement">
+      <UniqueIdentifier>{37450988-ccae-467b-b436-9cc3a1847edb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -5,9 +5,20 @@
 #include "EBlackboard.h"
 #include "SteeringBehaviours.h"
 #include "BT_Behaviors.h"
+#include "ExplorationMemory.h"
+#include "AgentMemory.h"
+#include "AgentFOV.h"
+#include "AgentMovement.h"
+#include "HouseMemory.h"
 
 using namespace std;
 using namespace Elite;
+
+Plugin::~Plugin()
+{
+	SAFE_DELETE(m_pAgentMemory);
+	SAFE_DELETE(m_pDecisionMaking);
+}
 
 //Called only once, during initialization
 void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
@@ -16,43 +27,85 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	//This interface gives you access to certain actions the AI_Framework can perform for you
 	m_pInterface = static_cast<IExamInterface*>(pInterface);
 
+	HouseInfo testHouse{};
+	testHouse.Center = { 100.f, 100.f };
+
+	HouseMemory testHouseMemory{};
+	testHouseMemory.IsHouseInMemory(testHouse);
+
 	//Bit information about the plugin
 	//Please fill this in!!
 	info.BotName = "Sloeber";
 	info.Student_FirstName = "Rutger";
 	info.Student_LastName = "Hertoghe";
 	info.Student_Class = "2DAE07";
+
+	m_pAgentFOV = new AgentFOV{ m_pInterface };
+	m_pAgentMovement = new AgentMovement{m_pInterface};
+
+	ExplorationMemory* explorationMem{new ExplorationMemory(m_pInterface->World_GetInfo().Center, m_pInterface->World_GetInfo().Dimensions, 10)};
+	HouseMemory* houseMemory{ new HouseMemory{} };
+	m_pAgentMemory = new AgentMemory{ explorationMem, houseMemory };
+
+	Blackboard* pBlackboard = CreateBlackboard();
+
+	BehaviorSequence* exploringRoutine
+	{
+		new BehaviorSequence{std::vector<IBehavior*>
+		{
+			new BehaviorConditional{BT_Conditions::NothingInFOV},
+			new BehaviorAction{BT_Actions::Explore}
+		}}
+	};
+
+	BehaviorSequence* zombieInFovRoutine
+	{
+		new BehaviorSequence{std::vector<IBehavior*>
+		{
+			new BehaviorConditional{BT_Conditions::EnemyInFOV},
+			new BehaviorAction{BT_Actions::FleeFacingTarget}
+		}}
+	};
+
+	BehaviorSequence* houseInFovRoutine
+	{
+		new BehaviorSequence{std::vector<IBehavior*>
+		{
+			new BehaviorConditional{BT_Conditions::HouseInFOV},
+			new BehaviorSelector{std::vector<IBehavior*>
+			{
+				new BehaviorSequence{std::vector<IBehavior*>{
+					new BehaviorConditional{BT_Conditions::HouseInMemory},
+					new BehaviorConditional{BT_Conditions::HouseNeedsRevisit},
+					new BehaviorAction{BT_Actions::EnterHouse}
+				}},
+				new BehaviorAction{BT_Actions::MemoriseHouse}
+			}}
+		}}
+	};
+
+	Elite::IBehavior* pRootNode{
+		new BehaviorSelector{std::vector<IBehavior*>
+		{
+			houseInFovRoutine,
+			//zombieInFovRoutine,
+			exploringRoutine
+		}}
+	};
+
+	m_pDecisionMaking = new BehaviorTree{ pBlackboard, pRootNode };
 }
 
 //Called only once
 void Plugin::DllInit()
 {
 	//Called when the plugin is loaded
-	Blackboard * pBlackboard = CreateBlackboard();
-
-	m_pSeek = new Seek{};
-	m_pFlee = new Flee{};
-	m_pCurrentSteeringBehaviour = m_pFlee;
-
-	Elite::IBehavior* pRootNode{
-		new BehaviorSelector{std::vector<IBehavior*>
-		{
-			new BehaviorAction{BT_Actions::SetToSeek}
-		}}
-	};
-
-	BehaviorTree* pBehaviorTree{ new BehaviorTree{pBlackboard, pRootNode} };
-
-	m_pDecisionMaking = pBehaviorTree;
 }
 
 //Called only once
 void Plugin::DllShutdown()
 {
 	//Called when the plugin gets unloaded
-	SAFE_DELETE(m_pBlackboard)
-	SAFE_DELETE(m_pSeek)
-	SAFE_DELETE(m_pFlee)
 }
 
 //Called only once, during initialization
@@ -86,7 +139,7 @@ void Plugin::Update(float dt)
 		//Update target based on input
 		Elite::MouseData mouseData = m_pInterface->Input_GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
 		const Elite::Vector2 pos = Elite::Vector2(static_cast<float>(mouseData.X), static_cast<float>(mouseData.Y));
-		m_Target = m_pInterface->Debug_ConvertScreenToWorld(pos);
+		//m_Target = m_pInterface->Debug_ConvertScreenToWorld(pos);
 	}
 	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Space))
 	{
@@ -136,50 +189,46 @@ void Plugin::Update(float dt)
 		m_pInterface->Inventory_GetItem(m_InventorySlot, info);
 		std::cout << (int)info.Type << std::endl;
 	}
-	else if (m_pInterface->Input_IsKeyboardKeyUp(Elite::eScancode_T))
-	{
-		if (m_pCurrentSteeringBehaviour == m_pSeek)
-		{
-			m_pCurrentSteeringBehaviour = m_pFlee;
-		}
-		else if (m_pCurrentSteeringBehaviour == m_pFlee)
-		{
-			m_pCurrentSteeringBehaviour = m_pSeek;
-		}
-	}
 }
 
 //Update
 //This function calculates the new SteeringOutput, called once per frame
 SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 {
-	m_pDecisionMaking->Update(dt);
-
-
-	auto steering = SteeringPlugin_Output();
-	
 	//Use the Interface (IAssignmentInterface) to 'interface' with the AI_Framework
 	auto agentInfo = m_pInterface->Agent_GetInfo();
 
+	m_pAgentMemory->Update(dt, agentInfo);
+	m_pDecisionMaking->Update(dt);
+	
+
 	//Use the navmesh to calculate the next navmesh point
-	Elite::Vector2 checkpointLocation{ 1000.f, 1000.f };
-	auto nextTargetPos = m_pInterface->NavMesh_GetClosestPathPoint(checkpointLocation);
+	//Elite::Vector2 checkpointLocation{ 1000.f, 1000.f };
+	//auto nextTargetPos = m_pInterface->NavMesh_GetClosestPathPoint(checkpointLocation);
 
 	//OR, Use the mouse target
 	//auto nextTargetPos = m_pInterface->NavMesh_GetClosestPathPoint(m_Target); //Uncomment this to use mouse position as guidance
 
-	auto vHousesInFOV = GetHousesInFOV();//uses m_pInterface->Fov_GetHouseByIndex(...)
-	auto vEntitiesInFOV = GetEntitiesInFOV(); //uses m_pInterface->Fov_GetEntityByIndex(...)
-
-	for (auto& e : vEntitiesInFOV)
+	auto steering{ m_pAgentMovement->CalculateSteering(dt, agentInfo) };
+	
+	/*if (Distance(nextTargetPos, agentInfo.Position) < 2.f)
 	{
-		if (e.Type == eEntityType::PURGEZONE)
-		{
-			PurgeZoneInfo zoneInfo;
-			m_pInterface->PurgeZone_GetInfo(e, zoneInfo);
-			//std::cout << "Purge Zone in FOV:" << e.Location.x << ", "<< e.Location.y << "---Radius: "<< zoneInfo.Radius << std::endl;
-		}
-	}
+		steering.LinearVelocity = Elite::ZeroVector2;
+	}*/
+
+	steering.RunMode = m_CanRun; //If RunMode is True > MaxLinSpd is increased for a limited time (till your stamina runs out)
+	
+	//SteeringPlugin_Output is works the exact same way a SteeringBehaviour output
+
+	//for (auto& e : vEntitiesInFOV)
+	//{
+	//	if (e.Type == eEntityType::PURGEZONE)
+	//	{
+	//		PurgeZoneInfo zoneInfo;
+	//		m_pInterface->PurgeZone_GetInfo(e, zoneInfo);
+	//		//std::cout << "Purge Zone in FOV:" << e.Location.x << ", "<< e.Location.y << "---Radius: "<< zoneInfo.Radius << std::endl;
+	//	}
+	//}
 
 	//INVENTORY USAGE DEMO
 	//********************
@@ -211,29 +260,10 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 		m_pInterface->Inventory_RemoveItem(m_InventorySlot);
 	}
 
-	//Simple Seek Behaviour (towards Target)
-	m_pCurrentSteeringBehaviour->SetTarget(nextTargetPos);
-	steering = m_pCurrentSteeringBehaviour->CalculateSteering(dt, agentInfo);
-	//steering.LinearVelocity = nextTargetPos - agentInfo.Position; //Desired Velocity
-	//steering.LinearVelocity.Normalize(); //Normalize Desired Velocity
-	//steering.LinearVelocity *= agentInfo.MaxLinearSpeed; //Rescale to Max Speed
-
-	if (Distance(nextTargetPos, agentInfo.Position) < 2.f)
-	{
-		steering.LinearVelocity = Elite::ZeroVector2;
-	}
-
-	steering.AutoOrient = false; //Setting AutoOrient to TRue overrides the AngularVelocity
-
-	steering.RunMode = m_CanRun; //If RunMode is True > MaxLinSpd is increased for a limited time (till your stamina runs out)
-	
-	//SteeringPlugin_Output is works the exact same way a SteeringBehaviour output
-
 //@End (Demo Purposes)
 	m_GrabItem = false; //Reset State
 	m_UseItem = false;
 	m_RemoveItem = false;
-
 
 	return steering;
 }
@@ -242,55 +272,10 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 void Plugin::Render(float dt) const
 {
 	//This Render function should only contain calls to Interface->Draw_... functions
-	m_pInterface->Draw_SolidCircle(m_Target, .7f, { 0,0 }, { 1, 0, 0 });
-}
+	/*if (m_pInterface)					return;
+	if (m_pCurrentSteeringBehaviour)	return;
 
-void Plugin::SetToSeek()
-{
-	m_pCurrentSteeringBehaviour = m_pSeek;
-}
-
-void Plugin::SetToFlee()
-{
-	m_pCurrentSteeringBehaviour = m_pFlee;
-}
-
-vector<HouseInfo> Plugin::GetHousesInFOV() const
-{
-	vector<HouseInfo> vHousesInFOV = {};
-
-	HouseInfo hi = {};
-	for (int i = 0;; ++i)
-	{
-		if (m_pInterface->Fov_GetHouseByIndex(i, hi))
-		{
-			vHousesInFOV.push_back(hi);
-			continue;
-		}
-
-		break;
-	}
-
-	return vHousesInFOV;
-}
-
-vector<EntityInfo> Plugin::GetEntitiesInFOV() const
-{
-	vector<EntityInfo> vEntitiesInFOV = {};
-
-	EntityInfo ei = {};
-	for (int i = 0;; ++i)
-	{
-		if (m_pInterface->Fov_GetEntityByIndex(i, ei))
-		{
-			vEntitiesInFOV.push_back(ei);
-			continue;
-		}
-
-		break;
-	}
-
-	return vEntitiesInFOV;
+	m_pInterface->Draw_SolidCircle(m_pCurrentSteeringBehaviour->GetTarget(), .7f, {0,0}, {1, 0, 0});*/
 }
 
 Elite::Blackboard* Plugin::CreateBlackboard()
@@ -298,5 +283,12 @@ Elite::Blackboard* Plugin::CreateBlackboard()
 	Elite::Blackboard* pBlackboard{ new Elite::Blackboard{} };
 	pBlackboard->AddData("Interface", m_pInterface);
 	pBlackboard->AddData("Plugin", this);
+	pBlackboard->AddData("Enemy", static_cast<EntityInfo*>(nullptr));
+	pBlackboard->AddData("ShotgunSlot", static_cast<UINT>(10));
+	pBlackboard->AddData("PistolSlot", static_cast<UINT>(10));
+	pBlackboard->AddData("AgentMemory", m_pAgentMemory);
+	pBlackboard->AddData("AgentFOV", m_pAgentFOV);
+	pBlackboard->AddData("AgentMovement", m_pAgentMovement);
+	pBlackboard->AddData("House", static_cast<HouseInfo*>(nullptr));
 	return pBlackboard;
 }

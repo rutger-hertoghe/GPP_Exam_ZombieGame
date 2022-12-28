@@ -10,6 +10,7 @@ public:
 	void SetTarget(const Elite::Vector2& target);
 	virtual SteeringPlugin_Output CalculateSteering(float deltaTime, const AgentInfo& agent) = 0;
 	
+	const Elite::Vector2& GetTarget();
 protected:
 	Elite::Vector2 m_Target;
 };
@@ -29,20 +30,27 @@ public:
 	virtual ~Flee() = default;
 	
 	virtual SteeringPlugin_Output CalculateSteering(float deltaTime, const AgentInfo& agent) override;
+	void SetFaceTarget(bool faceTarget);
+
+private:
+	bool m_FaceTarget{ false };
 };
 
-//class Explore : public SteeringBehaviour
-//{
-//public:
-//	Explore() = default;
-//	virtual ~Explore() = default;
-//
-//	virtual SteeringPlugin_Output CalculateSteering(float deltaTime, const AgentInfo& agent) override;
-//
-//private:
-//	std::vector<Elite::Vector2> exploredLocations;
-//	float explorationGridSize{ 50.f };
-//
-//
-//};
+class Wander : public Seek
+{
+public:
+	Wander() = default;
+	virtual ~Wander() = default;
+
+	virtual SteeringPlugin_Output CalculateSteering(float deltaTime, const AgentInfo& agent) override;
+
+private:
+	float m_WanderAngle{};
+	float m_MaxAngleChange{ 0.3f };
+	float m_Offset{ 10.f };
+	float m_Radius{ 5.f };
+
+	float Wander::GenerateRandomAngle(float precisionScaling) const;
+};
+
 
