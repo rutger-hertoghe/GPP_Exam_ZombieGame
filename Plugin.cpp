@@ -93,8 +93,8 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	{
 		new BehaviorSequence{std::vector<IBehavior*>
 		{
-			new BehaviorAction{BT_Actions::GetClosestUnvisitedHouseInFOV},
-			new BehaviorConditional{BT_Conditions::FoundHouseUnvisited},
+			new BehaviorAction{BT_Actions::GetUnvisitedHouseInFOV},
+			//new BehaviorConditional{BT_Conditions::FoundHouseUnvisited},
 			new BehaviorAction{BT_Actions::EnterHouse}
 		}}
 	};

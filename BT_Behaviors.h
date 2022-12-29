@@ -70,43 +70,34 @@ namespace BT_Actions
 			return BehaviorState::Failure;
 		}
 
-		// Get the agent position
-		const auto agentPos{ pInterface->Agent_GetInfo().Position };
-		// Set the minDist to a larger float to start comparing with the highest value possible
-		float minDist{ FLT_MAX };
-		// HouseInfo to store closest house in
-		HouseInfo closestHouse;
+		HouseInfo foundHouse;
+		bool foundCandidate{ false };
 
 		//Start looping through all found houses
 		for (auto& house : houseVec)
 		{
-			// Get the distance to the center of the house
-			const float distToHouse{ DistanceSquared(agentPos, house.Center) };
-			// If the distance to the current house is smaller than the stored smallest distance, continue with next house in loop
-			if (distToHouse > minDist)
-			{
-				continue;
-			}
-
 			if(pHouseMemory->IsHouseInMemory(house))
 			{
-				closestHouse = house;
-				minDist = distToHouse;
+				if(pHouseMemory->GetRememberedHouse(house).visited == false)
+				{
+					foundHouse = house;
+					foundCandidate = true;
+				}
 				continue;
 			}
 
 			pHouseMemory->AddHouse(house);
-			closestHouse = house;
-			minDist = distToHouse;
+			foundHouse = house;
+			foundCandidate = true;
+			break;
 		}
 
-		if (minDist < FLT_MAX)
+		if(foundCandidate)
 		{
-			//return BehaviorState::Failure;
-			pBlackboard->ChangeData("House", closestHouse);
+			pBlackboard->ChangeData("House", foundHouse);
+			return BehaviorState::Success;
 		}
-		
-		return BehaviorState::Success;
+		return BehaviorState::Failure;
 	}
 
 	inline BehaviorState EnterHouse(Blackboard* pBlackboard)
