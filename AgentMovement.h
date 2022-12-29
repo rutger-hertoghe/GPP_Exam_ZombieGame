@@ -23,6 +23,7 @@ public:
 	//void SetToSeekAndScan(const Elite::Vector2& target, bool useNavMesh = true);
 	void SetToSeekAndScan(bool useNavMesh = true);
 	void SetToSprintSeek(bool useNavMesh = true);
+	void SetToSprintSeek(const Elite::Vector2& target, bool useNavMesh = true);
 	void SetToFlee(const Elite::Vector2& target, bool useNavMesh = true, bool faceTarget = false);
 	void SetToWander();
 

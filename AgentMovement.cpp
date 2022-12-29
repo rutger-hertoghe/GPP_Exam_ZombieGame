@@ -95,6 +95,12 @@ void AgentMovement::SetToSprintSeek(bool useNavMesh)
 	m_pCurrentSteeringBehaviour = m_pSprintSeek;
 }
 
+void AgentMovement::SetToSprintSeek(const Elite::Vector2& target, bool useNavMesh)
+{
+	m_Target = target;
+	SetToSprintSeek();
+}
+
 void AgentMovement::SetToFlee(const Elite::Vector2& target, bool useNavMesh, bool faceTarget)
 {
 	SetUseNavMesh(useNavMesh);

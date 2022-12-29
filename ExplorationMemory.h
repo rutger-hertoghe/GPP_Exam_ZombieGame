@@ -22,5 +22,6 @@ private:
 	Elite::Vector2 FindClosestUnexplored(const AgentInfo& agent);
 	bool ArrivedInCell(const AgentInfo& agent);
 	void RemoveOldTargetFromVec();
+	void GenerateExplorationPoints(const Elite::Vector2& worldCenter, const Elite::Vector2& worldSize, int divisionsPerDim);
 };
 

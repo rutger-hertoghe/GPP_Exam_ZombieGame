@@ -12,6 +12,7 @@ RememberedHouse::RememberedHouse(const HouseInfo& houseInfo)
 
 void RememberedHouse::GenerateWayPoints()
 {
+	// TODO: Generate waypoints smart based on the house dimensions
 	constexpr float waypointOffset{ 10.f };
 	const float halfX{ size.x / 2 - waypointOffset};
 	const float halfY{ size.y / 2 - waypointOffset};
@@ -20,9 +21,9 @@ void RememberedHouse::GenerateWayPoints()
 	Elite::Vector2 botRight{ center.x + halfX, center.y - halfY };
 	Elite::Vector2 botLeft{ center.x - halfX, center.y - halfY };
 	m_WayPoints.emplace_back(topRight);
-	m_WayPoints.emplace_back(botLeft);
 	m_WayPoints.emplace_back(botRight);
 	m_WayPoints.emplace_back(topLeft);
+	m_WayPoints.emplace_back(botLeft);
 }
 
 //std::vector<Elite::Vector2> RememberedHouse::CalculateVertices() const

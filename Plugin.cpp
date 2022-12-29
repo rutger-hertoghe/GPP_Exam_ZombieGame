@@ -94,7 +94,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 		new BehaviorSequence{std::vector<IBehavior*>
 		{
 			new BehaviorAction{BT_Actions::GetUnvisitedHouseInFOV},
-			//new BehaviorConditional{BT_Conditions::FoundHouseUnvisited},
+			new BehaviorConditional{BT_Conditions::FoundHouseUnvisited},
 			new BehaviorAction{BT_Actions::EnterHouse}
 		}}
 	};
@@ -115,15 +115,24 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 		}}
 	};
 
+	BehaviorSequence* purgeZoneRoutine
+	{
+		new BehaviorSequence{std::vector<IBehavior*>{
+			new BehaviorConditional{BT_Conditions::IsInPurgeZone},
+			new BehaviorAction{BT_Actions::EscapePurgeZone}
+		}}
+	};
+
 	Elite::IBehavior* pRootNode{
 		new BehaviorSelector{std::vector<IBehavior*>
 		{
 			lowEnergyRoutine,
+			purgeZoneRoutine,
 			zombieInFovRoutine,
-			bittenRoutine,
+			// bittenRoutine,
 			itemGrabRoutine,
 			houseRoutine,
-			// scanRoutine,
+			scanRoutine,
 			new BehaviorAction{BT_Actions::Explore}
 		}}
 	};
@@ -161,7 +170,7 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnPurgeZonesOnMiddleClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 15;
+	params.Seed = 14;
 }
 
 //Only Active in DEBUG Mode
@@ -241,65 +250,8 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 	m_pAgentMemory->Update(dt, agentInfo);
 	m_pDecisionMaking->Update(dt);
 	m_pAgentMovement->Update(dt);
-	
-
-	//Use the navmesh to calculate the next navmesh point
-	//Elite::Vector2 checkpointLocation{ 1000.f, 1000.f };
-	//auto nextTargetPos = m_pInterface->NavMesh_GetClosestPathPoint(checkpointLocation);
-
-	//OR, Use the mouse target
-	//auto nextTargetPos = m_pInterface->NavMesh_GetClosestPathPoint(m_Target); //Uncomment this to use mouse position as guidance
 
 	auto steering{ m_pAgentMovement->CalculateSteering(dt, agentInfo) };
-	
-	/*if (Distance(nextTargetPos, agentInfo.Position) < 2.f)
-	{
-		steering.LinearVelocity = Elite::ZeroVector2;
-	}*/
-
-	steering.RunMode = m_CanRun; //If RunMode is True > MaxLinSpd is increased for a limited time (till your stamina runs out)
-	
-	//SteeringPlugin_Output is works the exact same way a SteeringBehaviour output
-
-	//for (auto& e : vEntitiesInFOV)
-	//{
-	//	if (e.Type == eEntityType::PURGEZONE)
-	//	{
-	//		PurgeZoneInfo zoneInfo;
-	//		m_pInterface->PurgeZone_GetInfo(e, zoneInfo);
-	//		//std::cout << "Purge Zone in FOV:" << e.Location.x << ", "<< e.Location.y << "---Radius: "<< zoneInfo.Radius << std::endl;
-	//	}
-	//}
-
-	//INVENTORY USAGE DEMO
-	//********************
-
-	if (m_GrabItem)
-	{
-		ItemInfo item;
-		//Item_Grab > When DebugParams.AutoGrabClosestItem is TRUE, the Item_Grab function returns the closest item in range
-		//Keep in mind that DebugParams are only used for debugging purposes, by default this flag is FALSE
-		//Otherwise, use GetEntitiesInFOV() to retrieve a vector of all entities in the FOV (EntityInfo)
-		//Item_Grab gives you the ItemInfo back, based on the passed EntityHash (retrieved by GetEntitiesInFOV)
-		if (m_pInterface->Item_Grab({}, item))
-		{
-			//Once grabbed, you can add it to a specific inventory slot
-			//Slot must be empty
-			m_pInterface->Inventory_AddItem(m_InventorySlot, item);
-		}
-	}
-
-	if (m_UseItem)
-	{
-		//Use an item (make sure there is an item at the given inventory slot)
-		m_pInterface->Inventory_UseItem(m_InventorySlot);
-	}
-
-	if (m_RemoveItem)
-	{
-		//Remove an item from a inventory slot
-		m_pInterface->Inventory_RemoveItem(m_InventorySlot);
-	}
 
 //@End (Demo Purposes)
 	m_GrabItem = false; //Reset State
@@ -312,6 +264,8 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 //This function should only be used for rendering debug elements
 void Plugin::Render(float dt) const
 {
+	m_pInterface->Draw_Circle({ 0.f, 0.f }, 200.f, { 1.f, 0.f, 1.f });
+	m_pInterface->Draw_Circle({ 0.f, 0.f }, 250.f, { 1.f, 0.f, 1.f });
 	//This Render function should only contain calls to Interface->Draw_... functions
 	/*if (m_pInterface)					return;
 	if (m_pCurrentSteeringBehaviour)	return;
@@ -331,5 +285,6 @@ Elite::Blackboard* Plugin::CreateBlackboard()
 	pBlackboard->AddData("House", HouseInfo{});
 	pBlackboard->AddData("Item", EntityInfo{});
 	pBlackboard->AddData("Inventory", m_pAgentInventory);
+	pBlackboard->AddData("PurgeZone", PurgeZoneInfo{});
 	return pBlackboard;
 }

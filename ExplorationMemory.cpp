@@ -4,17 +4,7 @@
 ExplorationMemory::ExplorationMemory(const Elite::Vector2& worldCenter, const Elite::Vector2& worldSize, float arrivalRange, int divisionsPerDim)
 	: m_ArrivalRange(arrivalRange)
 {
-	m_CellDims = {worldSize.x / divisionsPerDim,  worldSize.y / divisionsPerDim };
-	Elite::Vector2 worldOrigin{ worldCenter.x - worldSize.x, worldCenter.y - worldSize.y };
-
-	for (int x{ 0 }; x < divisionsPerDim; ++x)
-	{
-		for (int y{ 0 }; y < divisionsPerDim; ++y)
-		{
-			Elite::Vector2 cellMid{ worldSize.x / 2 - x * m_CellDims.x + m_CellDims.x / 2, worldSize.y / 2 - y * m_CellDims.y + m_CellDims.y };
-			m_VisitingPoints.push_back(cellMid);
-		}
-	}
+	GenerateExplorationPoints(worldCenter, worldSize, divisionsPerDim);
 }
 
 void ExplorationMemory::Update(float dt, const AgentInfo& agent)
@@ -38,7 +28,7 @@ Elite::Vector2 ExplorationMemory::GetCurrentTarget()
 
 Elite::Vector2 ExplorationMemory::FindClosestUnexplored(const AgentInfo& agent)
 {
-	const Elite::Vector2 tetherPoint{ agent.Position / 2 };
+	const Elite::Vector2 tetherPoint{ agent.Position };
 
 	auto locationDist{ [&tetherPoint](const Elite::Vector2& lhs,const Elite::Vector2& rhs) {
 		float dist1 = tetherPoint.DistanceSquared(lhs);
@@ -69,4 +59,33 @@ void ExplorationMemory::RemoveOldTargetFromVec()
 {
 	m_VisitingPoints.erase(std::remove(begin(m_VisitingPoints), end(m_VisitingPoints), m_CurrentTarget), m_VisitingPoints.end());
 	std::cout << "Remaining points to visit: " << m_VisitingPoints.size() << "\n";
+}
+
+void ExplorationMemory::GenerateExplorationPoints(const Elite::Vector2& worldCenter, const Elite::Vector2& worldSize, int divisionsPerDim)
+{
+	// TODO: rename
+	constexpr float innerCircleRange{ 40.f };
+	constexpr float middleCircleRange{ 200.f };
+	constexpr float outerCircleRange{ 250.f };
+	const float degreeIncrements{ (static_cast<float>(M_PI) * 2) / divisionsPerDim };
+	for(int i{0}; i < divisionsPerDim; ++i)
+	{
+		Elite::Vector2 angleVec{cosf(degreeIncrements * i), sinf(degreeIncrements * i)};
+
+		m_VisitingPoints.push_back(angleVec * innerCircleRange);
+		m_VisitingPoints.push_back(angleVec * middleCircleRange);
+		m_VisitingPoints.push_back(angleVec * outerCircleRange);
+	}
+
+	/*m_CellDims = { worldSize.x / divisionsPerDim,  worldSize.y / divisionsPerDim };
+	Elite::Vector2 worldOrigin{ worldCenter.x - worldSize.x, worldCenter.y - worldSize.y };
+
+	for (int x{ 0 }; x < divisionsPerDim; ++x)
+	{
+		for (int y{ 0 }; y < divisionsPerDim; ++y)
+		{
+			Elite::Vector2 cellMid{ worldSize.x / 2 - x * m_CellDims.x + m_CellDims.x / 2, worldSize.y / 2 - y * m_CellDims.y + m_CellDims.y };
+			m_VisitingPoints.push_back(cellMid);
+		}
+	}*/
 }

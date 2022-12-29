@@ -97,7 +97,7 @@ bool AgentInventory::UseShotgun()
 	if (!hasShot)
 	{
 		std::cout << "Out of ammo!\n";
-		// TODO: discard pistol here?
+		RemoveItem(shotgunSlot);
 	}
 	return hasShot;
 }

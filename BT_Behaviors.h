@@ -67,7 +67,7 @@ namespace BT_Actions
 		// If no houses in FOV, return failure state
 		if (houseVec.empty())
 		{
-			return BehaviorState::Failure;
+			return BehaviorState::Success;
 		}
 
 		HouseInfo foundHouse;
@@ -95,9 +95,8 @@ namespace BT_Actions
 		if(foundCandidate)
 		{
 			pBlackboard->ChangeData("House", foundHouse);
-			return BehaviorState::Success;
 		}
-		return BehaviorState::Failure;
+		return BehaviorState::Success;
 	}
 
 	inline BehaviorState EnterHouse(Blackboard* pBlackboard)
@@ -297,8 +296,32 @@ namespace BT_Actions
 		AgentInventory* pInventory;
 		BS_RETRIEVE_AND_VALIDATE("Inventory", pInventory);
 
-		pInventory->UseFood();
+		if(pInventory->UseFood())
+		{
+			return BehaviorState::Success;
+		}
+		return BehaviorState::Failure;
+	}
+
+	inline BehaviorState EscapePurgeZone(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+		PurgeZoneInfo purgeZone;
+		BS_RETRIEVE_AND_VALIDATE("PurgeZone", purgeZone);
+
+		IExamInterface* pInterface;
+		BS_RETRIEVE_AND_VALIDATE("Interface", pInterface);
+
+		AgentMovement* pMovement;
+		BS_RETRIEVE_AND_VALIDATE("AgentMovement", pMovement);
+
+		auto agentPos{ pInterface->Agent_GetInfo().Position };
+		auto quickestEscapePoint{ agentPos - purgeZone.Center };
+		//quickestEscapePoint.Normalize();
+		quickestEscapePoint *= purgeZone.Radius;
+		pMovement->SetToSprintSeek(quickestEscapePoint);
 		return BehaviorState::Success;
+		
 	}
 
 	inline BehaviorState SprintToTarget(Blackboard* pBlackboard)
@@ -366,6 +389,11 @@ namespace BT_Conditions
 		BC_RETRIEVE_AND_VALIDATE("AgentMemory", pAgentMemory);
 		HouseMemory* pHouseMemory{ pAgentMemory->GetHouseMemory() };
 
+		if(!pHouseMemory->IsHouseInMemory(houseInfo))
+		{
+			return false;
+		}
+
 		if(pHouseMemory->GetRememberedHouse(houseInfo).visited)
 		{
 			return false;
@@ -423,7 +451,10 @@ namespace BT_Conditions
 		IExamInterface* pInterface;
 		BC_RETRIEVE_AND_VALIDATE("Interface", pInterface);
 
-		if(pInterface->Agent_GetInfo().Energy < 1.f)
+		/*AgentInventory* pInventory;
+		BC_RETRIEVE_AND_VALIDATE("AgentInventory", pInventory);*/
+
+		if(pInterface->Agent_GetInfo().Energy < 1.f /*&& pInventory->HasItem(eItemType::FOOD)*/)
 		{
 			return true;
 		}
@@ -475,6 +506,8 @@ namespace BT_Conditions
 			{
 				PurgeZoneInfo purgeInfo;
 				pInterface->PurgeZone_GetInfo(entity, purgeInfo);
+				pBlackboard->ChangeData("PurgeZone", purgeInfo);
+				return true;
 			}
 		}
 		return false;
