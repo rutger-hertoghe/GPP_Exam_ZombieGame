@@ -93,3 +93,22 @@ float Wander::GenerateRandomAngle(float precisionScaling) const
     return static_cast<float>((rand() % inputRandomFloat) - inputRandomFloat / 2) / precisionScaling;
 }
 // --------------------------------------------
+
+
+// --------------------------------------------
+// SEEK AND SCAN
+SteeringPlugin_Output SeekAndScan::CalculateSteering(float deltaTime, const AgentInfo& agent)
+{
+    SteeringPlugin_Output steering{ Seek::CalculateSteering(deltaTime, agent) };
+    steering.AutoOrient = false;
+    steering.AngularVelocity = agent.MaxAngularSpeed;
+    return steering;
+}
+// --------------------------------------------
+
+SteeringPlugin_Output SprintSeek::CalculateSteering(float deltaTime, const AgentInfo& agent)
+{
+    SteeringPlugin_Output steering{ Seek::CalculateSteering(deltaTime, agent) };
+    steering.RunMode = true;
+    return steering;
+}

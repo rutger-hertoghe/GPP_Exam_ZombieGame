@@ -45,21 +45,12 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 		m_pInterface->World_GetInfo().Center, 
 		m_pInterface->World_GetInfo().Dimensions, 
 		m_pInterface->Agent_GetInfo().FOV_Range,
-		10)
+		15)
 	};
 	HouseMemory* houseMemory{ new HouseMemory{} };
 	m_pAgentMemory = new AgentMemory{ explorationMem, houseMemory };
 
 	Blackboard* pBlackboard = CreateBlackboard();
-
-	BehaviorSequence* exploringRoutine
-	{
-		new BehaviorSequence{std::vector<IBehavior*>
-		{
-			new BehaviorConditional{BT_Conditions::NothingInFOV},
-			new BehaviorAction{BT_Actions::Explore}
-		}}
-	};
 
 	BehaviorSequence* zombieInFovRoutine
 	{
@@ -68,9 +59,19 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 			new BehaviorConditional{BT_Conditions::EnemyInFOV},
 			new BehaviorAction{BT_Actions::FleeFacingTarget},
 			new BehaviorSelector{std::vector<IBehavior*>{
+				new BehaviorConditional{BT_Conditions::NotAlignedWithEnemy},
 				new BehaviorAction{BT_Actions::UseShotgun},
-				new BehaviorAction{BT_Actions::UsePistol}
+				new BehaviorAction{BT_Actions::UsePistol},
 			}}
+		}}
+	};
+
+	BehaviorSequence* lowEnergyRoutine
+	{
+		new BehaviorSequence{std::vector<IBehavior*>
+		{
+			new BehaviorConditional{BT_Conditions::LowOnEnergy},
+			new BehaviorAction{BT_Actions::EatFood}
 		}}
 	};
 
@@ -88,17 +89,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 		}}
 	};
 
-	//BehaviorSequence* houseRoutine
-	//{
-	//	new BehaviorSequence{std::vector<IBehavior*>
-	//	{
-	//		new BehaviorConditional{BT_Conditions::FoundHouseUnvisited},
-	//		new BehaviorAction{BT_Actions::EnterHouse},
-	//		new BehaviorAction{BT_Actions::InsideHouse},
-	//		// new BehaviorAction{BT_Actions::Explore}
-	//	}}
-	//};
-
 	BehaviorSequence* houseRoutine
 	{
 		new BehaviorSequence{std::vector<IBehavior*>
@@ -109,12 +99,31 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 		}}
 	};
 
+	BehaviorSequence* scanRoutine
+	{
+		new BehaviorSequence{std::vector<IBehavior*>{
+			new BehaviorConditional{BT_Conditions::ShouldScanSurroundings},
+			new BehaviorAction{BT_Actions::ScanArea}
+		}}
+	};
+
+	BehaviorSequence* bittenRoutine
+	{
+		new BehaviorSequence{std::vector<IBehavior*>{
+			new BehaviorConditional{BT_Conditions::WasBitten},
+			new BehaviorAction{BT_Actions::SprintToTarget}
+		}}
+	};
+
 	Elite::IBehavior* pRootNode{
 		new BehaviorSelector{std::vector<IBehavior*>
 		{
+			lowEnergyRoutine,
 			zombieInFovRoutine,
+			bittenRoutine,
 			itemGrabRoutine,
 			houseRoutine,
+			// scanRoutine,
 			new BehaviorAction{BT_Actions::Explore}
 		}}
 	};
@@ -152,70 +161,74 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnPurgeZonesOnMiddleClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 40;
+	params.Seed = 15;
 }
 
 //Only Active in DEBUG Mode
 //(=Use only for Debug Purposes)
 void Plugin::Update(float dt)
 {
-	////Demo Event Code
-	////In the end your AI should be able to walk around without external input
-	//if (m_pInterface->Input_IsMouseButtonUp(Elite::InputMouseButton::eLeft))
-	//{
-	//	//Update target based on input
-	//	Elite::MouseData mouseData = m_pInterface->Input_GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
-	//	const Elite::Vector2 pos = Elite::Vector2(static_cast<float>(mouseData.X), static_cast<float>(mouseData.Y));
-	//	//m_Target = m_pInterface->Debug_ConvertScreenToWorld(pos);
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Space))
-	//{
-	//	m_CanRun = true;
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Left))
-	//{
-	//	m_AngSpeed -= Elite::ToRadians(10);
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Right))
-	//{
-	//	m_AngSpeed += Elite::ToRadians(10);
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_G))
-	//{
-	//	m_GrabItem = true;
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_U))
-	//{
-	//	m_UseItem = true;
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_R))
-	//{
-	//	m_RemoveItem = true;
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyUp(Elite::eScancode_Space))
-	//{
-	//	m_CanRun = false;
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Delete))
-	//{
-	//	m_pInterface->RequestShutdown();
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_M))
-	//{
-	//	if (m_InventorySlot > 0)
-	//		--m_InventorySlot;
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_P))
-	//{
-	//	if (m_InventorySlot < 4)
-	//		++m_InventorySlot;
-	//}
-	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Q))
-	//{
-	//	ItemInfo info = {};
-	//	m_pInterface->Inventory_GetItem(m_InventorySlot, info);
-	//	std::cout << (int)info.Type << std::endl;
-	//}
+	//Demo Event Code
+	//In the end your AI should be able to walk around without external input
+	if (m_pInterface->Input_IsMouseButtonUp(Elite::InputMouseButton::eLeft))
+	{
+		//Update target based on input
+		Elite::MouseData mouseData = m_pInterface->Input_GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
+		const Elite::Vector2 pos = Elite::Vector2(static_cast<float>(mouseData.X), static_cast<float>(mouseData.Y));
+		//m_Target = m_pInterface->Debug_ConvertScreenToWorld(pos);
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Space))
+	{
+		m_CanRun = true;
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Left))
+	{
+		m_AngSpeed -= Elite::ToRadians(10);
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Right))
+	{
+		m_AngSpeed += Elite::ToRadians(10);
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_G))
+	{
+		m_GrabItem = true;
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_U))
+	{
+		m_UseItem = true;
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_R))
+	{
+		m_RemoveItem = true;
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyUp(Elite::eScancode_Space))
+	{
+		m_CanRun = false;
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Delete))
+	{
+		m_pInterface->RequestShutdown();
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_M))
+	{
+		if (m_InventorySlot > 0)
+			--m_InventorySlot;
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_P))
+	{
+		if (m_InventorySlot < 4)
+			++m_InventorySlot;
+	}
+	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Q))
+	{
+		ItemInfo info = {};
+		m_pInterface->Inventory_GetItem(m_InventorySlot, info);
+		std::cout << (int)info.Type << std::endl;
+	}
+	else if(m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_F))
+	{
+		m_pAgentInventory->UseFood();
+	}
 }
 
 //Update
@@ -227,6 +240,7 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 
 	m_pAgentMemory->Update(dt, agentInfo);
 	m_pDecisionMaking->Update(dt);
+	m_pAgentMovement->Update(dt);
 	
 
 	//Use the navmesh to calculate the next navmesh point
@@ -310,9 +324,7 @@ Elite::Blackboard* Plugin::CreateBlackboard()
 	Elite::Blackboard* pBlackboard{ new Elite::Blackboard{} };
 	pBlackboard->AddData("Interface", m_pInterface);
 	pBlackboard->AddData("Plugin", this);
-	pBlackboard->AddData("Enemy", static_cast<EntityInfo*>(nullptr));
-	pBlackboard->AddData("ShotgunSlot", static_cast<UINT>(10));
-	pBlackboard->AddData("PistolSlot", static_cast<UINT>(10));
+	pBlackboard->AddData("Enemy", EntityInfo{});
 	pBlackboard->AddData("AgentMemory", m_pAgentMemory);
 	pBlackboard->AddData("AgentFOV", m_pAgentFOV);
 	pBlackboard->AddData("AgentMovement", m_pAgentMovement);

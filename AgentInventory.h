@@ -13,6 +13,7 @@ public:
 	bool UsePistol();
 	bool UseShotgun();
 	bool HasItem(eItemType itemType);
+	bool UseFood();
 
 private:
 	UINT m_NrSlots;
@@ -21,5 +22,6 @@ private:
 
 	UINT GetFirstEmptySlot();
 	UINT FindSlotWithItem(eItemType itemType);
+	void RemoveItem(UINT slot);
 };
 

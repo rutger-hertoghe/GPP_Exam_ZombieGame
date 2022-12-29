@@ -38,11 +38,11 @@ Elite::Vector2 ExplorationMemory::GetCurrentTarget()
 
 Elite::Vector2 ExplorationMemory::FindClosestUnexplored(const AgentInfo& agent)
 {
-	const Elite::Vector2 agentPos{ agent.Position };
+	const Elite::Vector2 tetherPoint{ agent.Position / 2 };
 
-	auto locationDist{ [&agentPos](const Elite::Vector2& lhs,const Elite::Vector2& rhs) {
-		float dist1 = agentPos.DistanceSquared(lhs);
-		float dist2 = agentPos.DistanceSquared(rhs);
+	auto locationDist{ [&tetherPoint](const Elite::Vector2& lhs,const Elite::Vector2& rhs) {
+		float dist1 = tetherPoint.DistanceSquared(lhs);
+		float dist2 = tetherPoint.DistanceSquared(rhs);
 		return dist1 < dist2;
 	} };
 

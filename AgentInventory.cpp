@@ -20,13 +20,29 @@ bool AgentInventory::PickUpItem(const EntityInfo& itemEntityInfo)
 		return false;
 	}
 
-	ItemInfo itemInfo;
-	m_pInterface->Item_Grab(itemEntityInfo, itemInfo);
+	ItemInfo grabbedItem;
+	m_pInterface->Item_Grab(itemEntityInfo, grabbedItem);
 
-	if (itemInfo.Type == eItemType::GARBAGE)
+	/*switch(grabbedItem.Type)
 	{
+	case eItemType::GARBAGE:
 		m_pInterface->Item_Destroy(itemEntityInfo);
-	}
+		break;
+	case eItemType::PISTOL:
+		const UINT pistolSlot{ FindSlotWithItem(eItemType::PISTOL) };
+		if(pistolSlot != m_NrSlots)
+		{
+			ItemInfo currentPistol;
+			m_pInterface->Inventory_GetItem(pistolSlot, currentPistol);
+			if (m_pInterface->Weapon_GetAmmo(grabbedItem) > m_pInterface->Weapon_GetAmmo(currentPistol))
+			{
+				m_pInterface->Inventory_RemoveItem(pistolSlot);
+				m_pInterface->Inventory_AddItem(pistolSlot, grabbedItem);
+			}
+			break;
+		}
+		
+	}*/
 
 	UINT emptySlot{ GetFirstEmptySlot()};
 	if (emptySlot == m_NrSlots)
@@ -35,11 +51,17 @@ bool AgentInventory::PickUpItem(const EntityInfo& itemEntityInfo)
 		return false;
 	}
 
-	if (m_pInterface->Inventory_AddItem(emptySlot, itemInfo))
+	if (m_pInterface->Inventory_AddItem(emptySlot, grabbedItem))
 	{
-		m_Items[emptySlot] = itemInfo.Type;
+		m_Items[emptySlot] = grabbedItem.Type;
+		if (grabbedItem.Type == eItemType::GARBAGE)
+		{
+			RemoveItem(emptySlot);
+		}
 		return true;
 	}
+
+	
 	std::cout << "Item not added to inventory\n";
 	return false;
 }
@@ -57,7 +79,7 @@ bool AgentInventory::UsePistol()
 	if (!hasShot)
 	{
 		std::cout << "Out of ammo!\n";
-		// TODO: discard pistol here?
+		RemoveItem(pistolSlot);
 	}
 	return hasShot;
 }
@@ -89,6 +111,24 @@ bool AgentInventory::HasItem(eItemType itemType)
 	return true;
 }
 
+bool AgentInventory::UseFood()
+{
+	UINT foodSlot{ FindSlotWithItem(eItemType::FOOD) };
+	if(foodSlot == m_NrSlots)
+	{
+		return false;
+	}
+
+	ItemInfo itemInfo;
+	m_pInterface->Inventory_GetItem(foodSlot, itemInfo);
+
+	std::cout << "Using food \n";
+	bool usedFood{ m_pInterface->Inventory_UseItem(foodSlot) };
+	RemoveItem(foodSlot);
+	
+	return usedFood;
+}
+
 UINT AgentInventory::GetFirstEmptySlot()
 {
 	for (UINT slot{ 0 }; slot < m_NrSlots; ++slot)
@@ -111,4 +151,10 @@ UINT AgentInventory::FindSlotWithItem(eItemType itemType)
 		}
 	}
 	return m_NrSlots;
+}
+
+void AgentInventory::RemoveItem(UINT slot)
+{
+	m_pInterface->Inventory_RemoveItem(slot);
+	m_Items[slot] = eItemType::RANDOM_DROP;
 }

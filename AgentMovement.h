@@ -4,6 +4,8 @@
 class Seek;
 class Flee;
 class Wander;
+class SeekAndScan;
+class SprintSeek;
 class SteeringBehaviour;
 class IExamInterface;
 
@@ -12,21 +14,31 @@ class AgentMovement
 public:
 	explicit AgentMovement(IExamInterface* pInterface);
 	~AgentMovement();
-	
+
+	void Update(float dt);
 	//void DebugRender(); // TODO: implement!
 	SteeringPlugin_Output CalculateSteering(float dt, const AgentInfo& agent);
 
 	void SetToSeek(const Elite::Vector2& target, bool useNavMesh = true);
+	//void SetToSeekAndScan(const Elite::Vector2& target, bool useNavMesh = true);
+	void SetToSeekAndScan(bool useNavMesh = true);
+	void SetToSprintSeek(bool useNavMesh = true);
 	void SetToFlee(const Elite::Vector2& target, bool useNavMesh = true, bool faceTarget = false);
 	void SetToWander();
 
 	//void SetTarget(const Elite::Vector2& target);
 	void SetUseNavMesh(bool useNavMesh);
 
+	bool GetShouldScan();
+
 	//TODO: maybe use combined steering (seek + wander) while exploring map
 
 private:
 	bool m_useNavMesh;
+	float m_Timer;
+	const float m_TimeToScan;
+	bool m_ShouldScan;
+	const float m_ScanTime;
 
 	Elite::Vector2 m_Target;
 
@@ -34,6 +46,8 @@ private:
 	Seek* m_pSeek;
 	Flee* m_pFlee;
 	Wander* m_pWander;
+	SeekAndScan* m_pSeekAndScan;
+	SprintSeek* m_pSprintSeek;
 	IExamInterface* m_pInterface; // Owned by Plugin so no deletion in destructor
 };
 

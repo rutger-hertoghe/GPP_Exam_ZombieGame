@@ -15,11 +15,28 @@ protected:
 	Elite::Vector2 m_Target;
 };
 
+
 class Seek : public SteeringBehaviour
 {
 public:
 	Seek() = default;
 	virtual ~Seek() = default;
+	virtual SteeringPlugin_Output CalculateSteering(float deltaTime, const AgentInfo& agent) override;
+};
+
+class SeekAndScan : public Seek
+{
+public:
+	SeekAndScan() = default;
+	virtual ~SeekAndScan() = default;
+	virtual SteeringPlugin_Output CalculateSteering(float deltaTime, const AgentInfo& agent) override;
+};
+
+class SprintSeek : public Seek
+{
+public:
+	SprintSeek() = default;
+	virtual ~SprintSeek() = default;
 	virtual SteeringPlugin_Output CalculateSteering(float deltaTime, const AgentInfo& agent) override;
 };
 

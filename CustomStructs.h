@@ -11,10 +11,8 @@ struct RememberedHouse
 	Vector2 size;
 	float timeSinceLastVisit;
 	bool visited;
-	bool perimeterScouted;
+	std::vector<Elite::Vector2> m_WayPoints;
 
 private:
-	std::vector<Elite::Vector2> CalculateVertices() const;
-	void CalculateRummagingPoints(std::vector<Elite::Vector2> vertices);
-	void CalculatePerimeterPoints(std::vector<Elite::Vector2> vertices);
+	void GenerateWayPoints();
 };

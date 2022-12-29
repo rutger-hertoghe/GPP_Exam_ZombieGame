@@ -6,39 +6,37 @@ RememberedHouse::RememberedHouse(const HouseInfo& houseInfo)
 	, size{houseInfo.Size}
 	, timeSinceLastVisit{ 0.f }
 	, visited{false}
-	, perimeterScouted{false}
 {
+	GenerateWayPoints();
 }
 
-std::vector<Elite::Vector2> RememberedHouse::CalculateVertices() const
+void RememberedHouse::GenerateWayPoints()
 {
-	std::vector<Elite::Vector2> vertices;
-	const float halfX{ size.x / 2 };
-	const float halfY{ size.y / 2 };
-	Elite::Vector2 topRight{center.x + halfX, center.y + halfY};
-	Elite::Vector2 topLeft{center.x - halfX, center.y + halfY};
-	Elite::Vector2 botRight{center.x + halfX, center.y - halfY};
+	constexpr float waypointOffset{ 10.f };
+	const float halfX{ size.x / 2 - waypointOffset};
+	const float halfY{ size.y / 2 - waypointOffset};
+	Elite::Vector2 topRight{ center.x + halfX, center.y + halfY };
+	Elite::Vector2 topLeft{ center.x - halfX, center.y + halfY };
+	Elite::Vector2 botRight{ center.x + halfX, center.y - halfY };
 	Elite::Vector2 botLeft{ center.x - halfX, center.y - halfY };
-	vertices.emplace_back(topRight);
-	vertices.emplace_back(botLeft);
-	vertices.emplace_back(botRight);
-	vertices.emplace_back(topLeft);
-	return vertices;
+	m_WayPoints.emplace_back(topRight);
+	m_WayPoints.emplace_back(botLeft);
+	m_WayPoints.emplace_back(botRight);
+	m_WayPoints.emplace_back(topLeft);
 }
 
-void RememberedHouse::CalculatePerimeterPoints(std::vector<Elite::Vector2> vertices)
-{
-	constexpr float offset{ 10.f };
-	for(auto vertex : vertices)
-	{
-	}
-}
-
-void RememberedHouse::CalculateRummagingPoints(std::vector<Elite::Vector2> vertices)
-{
-	constexpr float offset{ 10.f };
-	for (auto vertex : vertices)
-	{
-		auto factors{ center - vertex };
-	}
-}
+//std::vector<Elite::Vector2> RememberedHouse::CalculateVertices() const
+//{
+//	std::vector<Elite::Vector2> vertices;
+//	const float halfX{ size.x / 2 };
+//	const float halfY{ size.y / 2 };
+//	Elite::Vector2 topRight{center.x + halfX, center.y + halfY};
+//	Elite::Vector2 topLeft{center.x - halfX, center.y + halfY};
+//	Elite::Vector2 botRight{center.x + halfX, center.y - halfY};
+//	Elite::Vector2 botLeft{ center.x - halfX, center.y - halfY };
+//	vertices.emplace_back(topRight);
+//	vertices.emplace_back(botLeft);
+//	vertices.emplace_back(botRight);
+//	vertices.emplace_back(topLeft);
+//	return vertices;
+//}

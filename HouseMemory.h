@@ -13,6 +13,7 @@ public:
 	void AddHouse(const HouseInfo& house);
 	void SetHouseToVisited(const HouseInfo& house);
 	RememberedHouse GetRememberedHouse(const HouseInfo& house);
+	RememberedHouse& GetRememberedHouseREF(const HouseInfo& house);
 
 private:
 	const float m_TimeForRevisit{ 100.f };

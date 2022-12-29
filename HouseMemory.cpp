@@ -49,6 +49,11 @@ RememberedHouse HouseMemory::GetRememberedHouse(const HouseInfo& house)
 	return houseMem;
 }
 
+RememberedHouse& HouseMemory::GetRememberedHouseREF(const HouseInfo& house)
+{
+	return m_Houses.at(ConvertHousePosToKey(house.Center));
+}
+
 long int HouseMemory::ConvertHousePosToKey(const Elite::Vector2& houseCenter)
 {
 	long int key{};

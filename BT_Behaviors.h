@@ -37,17 +37,17 @@ namespace BT_Actions
 	{
 		bool isValid{};
 
-		EntityInfo* pEnemyInfo;
-		BS_RETRIEVE_AND_VALIDATE("Enemy", pEnemyInfo);
+		EntityInfo EnemyInfo;
+		BS_RETRIEVE_AND_VALIDATE("Enemy", EnemyInfo);
 
 		AgentMovement* pMovement;
 		BS_RETRIEVE_AND_VALIDATE("AgentMovement", pMovement);
 
-		pMovement->SetToFlee(pEnemyInfo->Location, false, true);
+		pMovement->SetToFlee(EnemyInfo.Location, false, true);
 		return BehaviorState::Success;
 	}
 
-	inline BehaviorState GetClosestUnvisitedHouseInFOV(Blackboard* pBlackboard)
+	inline BehaviorState GetUnvisitedHouseInFOV(Blackboard* pBlackboard)
 	{
 		bool isValid{};
 
@@ -69,8 +69,6 @@ namespace BT_Actions
 		{
 			return BehaviorState::Failure;
 		}
-
-		std::cout << "Houses in view: " << houseVec.size() << "\n";
 
 		// Get the agent position
 		const auto agentPos{ pInterface->Agent_GetInfo().Position };
@@ -129,29 +127,29 @@ namespace BT_Actions
 
 		HouseMemory* pHouseMemory{ pAgentMemory->GetHouseMemory() };
 
-		pMovement->SetToSeek(houseInfo.Center);
+		RememberedHouse& remHouse{ pHouseMemory->GetRememberedHouseREF(houseInfo) };
+		auto agentPos{ pInterface->Agent_GetInfo().Position };
 
-		if (pInterface->Agent_GetInfo().IsInHouse)
+		if(remHouse.m_WayPoints.empty())
 		{
 			pHouseMemory->SetHouseToVisited(houseInfo);
 		}
+		else
+		{
+			pMovement->SetToSeek(remHouse.m_WayPoints.back());
+			if (DistanceSquared(agentPos, remHouse.m_WayPoints.back()) < 4.f)
+			{
+				remHouse.m_WayPoints.pop_back();
+			}
+		}
+
+		/*if (pInterface->Agent_GetInfo().IsInHouse)
+		{
+			pHouseMemory->SetHouseToVisited(houseInfo);
+		}*/
 
 		return BehaviorState::Success;
 	}
-
-	/*inline BehaviorState SetHouseToVisited(Blackboard* pBlackboard)
-	{
-		bool isValid{};
-
-		AgentMemory* pAgentMemory;
-		BS_RETRIEVE_AND_VALIDATE("AgentMemory", pAgentMemory);
-		
-		HouseInfo* pHouse;
-		BS_RETRIEVE_AND_VALIDATE("House", pHouse);
-
-		pAgentMemory->GetHouseMemory()->SetHouseToVisited(*pHouse);
-		return BehaviorState::Success;
-	}*/
 
 	inline BehaviorState UsePistol(Blackboard* pBlackboard)
 	{
@@ -190,7 +188,7 @@ namespace BT_Actions
 		return BehaviorState::Success;
 	}
 
-	inline BehaviorState SetToWander(Blackboard* pBlackboard)
+	/*inline BehaviorState SetToWander(Blackboard* pBlackboard)
 	{
 		bool isValid{};
 
@@ -200,8 +198,9 @@ namespace BT_Actions
 		pMovement->SetToWander();
 
 		return BehaviorState::Success;
-	}
+	}*/
 
+	// ITEM GRABBING
 	inline BehaviorState GetClosestItemInFOV(Blackboard* pBlackboard)
 	{
 		bool isValid{};
@@ -233,7 +232,7 @@ namespace BT_Actions
 		{
 			ItemInfo itemInfo{};
 			pInterface->Item_GetInfo(closestItem, itemInfo);
-			std::string itemName{};
+			/*std::string itemName{};
 			switch (itemInfo.Type)
 			{
 			case eItemType::PISTOL:
@@ -252,7 +251,7 @@ namespace BT_Actions
 				itemName = "garbage";
 				break;
 			}
-			std::cout << "Closest item is: " << itemName << "\n";
+			std::cout << "Closest item is: " << itemName << "\n";*/
 			pBlackboard->ChangeData("Item", closestItem);
 			return BehaviorState::Success;
 		}
@@ -262,7 +261,6 @@ namespace BT_Actions
 
 	inline BehaviorState GrabItem(Blackboard* pBlackboard)
 	{
-		std::cout << "Entered " << __func__ << "\n";
 		bool isValid{};
 		
 		AgentInventory* pInventory;
@@ -290,6 +288,38 @@ namespace BT_Actions
 		return BehaviorState::Success;
 	}
 
+	inline BehaviorState ScanArea(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		AgentMovement* pAgentMovement;
+		BS_RETRIEVE_AND_VALIDATE("AgentMovement", pAgentMovement);
+
+		pAgentMovement->SetToSeekAndScan();
+		return BehaviorState::Success;
+	}
+
+	inline BehaviorState EatFood(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		AgentInventory* pInventory;
+		BS_RETRIEVE_AND_VALIDATE("Inventory", pInventory);
+
+		pInventory->UseFood();
+		return BehaviorState::Success;
+	}
+
+	inline BehaviorState SprintToTarget(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+		AgentMovement* pMovement;
+		BS_RETRIEVE_AND_VALIDATE("AgentMovement", pMovement);
+
+		pMovement->SetToSprintSeek();
+
+		return BehaviorState::Success;
+	}
 }
 
 namespace BT_Conditions
@@ -326,18 +356,7 @@ namespace BT_Conditions
 		auto foundEnemy{ std::find_if(begin(entityVec), end(entityVec), isEnemy) };
 		if (foundEnemy != entityVec.end())
 		{
-			EntityInfo* pEnemyInfo{};
-			BC_RETRIEVE_AND_VALIDATE("Enemy", pEnemyInfo);
-			if (pEnemyInfo != nullptr)
-			{
-				delete pEnemyInfo;
-			}
-
-			pEnemyInfo = new EntityInfo{};
-			pEnemyInfo->Location = foundEnemy->Location;
-			pEnemyInfo->EntityHash = foundEnemy->EntityHash;
-			pEnemyInfo->Type = foundEnemy->Type;
-
+			const EntityInfo pEnemyInfo{*foundEnemy};
 			pBlackboard->ChangeData("Enemy", pEnemyInfo);
 			return true;
 		}
@@ -363,29 +382,6 @@ namespace BT_Conditions
 		return true;
 	}
 
-	/*inline bool FoundHouseUnvisited(Blackboard* pBlackboard)
-	{
-		bool isValid{};
-
-		HouseInfo houseInfo;
-		BC_RETRIEVE_AND_VALIDATE("House", houseInfo);
-
-		AgentMemory* pAgentMemory;
-		BC_RETRIEVE_AND_VALIDATE("AgentMemory", pAgentMemory);
-
-		HouseMemory* pHouseMemory{ pAgentMemory->GetHouseMemory() };
-
-		if (pHouseMemory->IsHouseInMemory(houseInfo))
-		{
-			auto remHouse{ pHouseMemory->GetRememberedHouse(houseInfo) };
-			if (remHouse.visited == false)
-			{
-				return true;
-			}
-		}
-		return false;
-	}*/
-
 	inline bool ItemInGrabbingRange(Blackboard* pBlackboard)
 	{
 		bool isValid{};
@@ -401,8 +397,94 @@ namespace BT_Conditions
 		
 		if (DistanceSquared(itemEntityInfo.Location, agentPos) < grabbingRange * grabbingRange)
 		{
-			std::cout << "Item in range\n";
 			return true;
+		}
+		return false;
+	}
+
+	inline bool NotAlignedWithEnemy(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		EntityInfo enemyEntityInfo;
+		BC_RETRIEVE_AND_VALIDATE("Enemy", enemyEntityInfo);
+
+		IExamInterface* pInterface;
+		BC_RETRIEVE_AND_VALIDATE("Interface", pInterface);
+
+		const auto agentPos{ pInterface->Agent_GetInfo().Position };
+		const auto enemyPos{ enemyEntityInfo.Location };
+		const auto vecToEnemy{ enemyPos - agentPos };
+		const float angleToEnemy{ atan2f(vecToEnemy.y, vecToEnemy.x) };
+		const float angleOfAgent{ pInterface->Agent_GetInfo().Orientation };
+
+		if(abs(angleToEnemy - angleOfAgent) > 0.01f)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	inline bool LowOnEnergy(Blackboard *pBlackboard)
+	{
+		bool isValid{};
+		IExamInterface* pInterface;
+		BC_RETRIEVE_AND_VALIDATE("Interface", pInterface);
+
+		if(pInterface->Agent_GetInfo().Energy < 1.f)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	inline bool ShouldScanSurroundings(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		AgentMovement* pMovement;
+		BC_RETRIEVE_AND_VALIDATE("AgentMovement", pMovement);
+
+		if(pMovement->GetShouldScan())
+		{
+			return true;
+		}
+		return false;
+	}
+
+	inline bool WasBitten(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		IExamInterface* pInterface;
+		BC_RETRIEVE_AND_VALIDATE("Interface", pInterface);
+
+		if(pInterface->Agent_GetInfo().WasBitten)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	inline bool IsInPurgeZone(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		AgentFOV* pAgentFov;
+		BC_RETRIEVE_AND_VALIDATE("AgentFOV", pAgentFov);
+
+		IExamInterface* pInterface;
+		BC_RETRIEVE_AND_VALIDATE("Interface", pInterface);
+
+		const auto entitiesInFov{ pAgentFov->GetEntitiesInFOV() };
+		for(auto entity : entitiesInFov)
+		{
+			if(entity.Type == eEntityType::PURGEZONE)
+			{
+				PurgeZoneInfo purgeInfo;
+				pInterface->PurgeZone_GetInfo(entity, purgeInfo);
+			}
 		}
 		return false;
 	}
