@@ -1,6 +1,5 @@
 #pragma once
 #include "Exam_HelperStructs.h"
-// TODO: implement this class!
 
 class Seek;
 class Flee;

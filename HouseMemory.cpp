@@ -5,7 +5,14 @@ void HouseMemory::Update(float dt)
 {
 	for (auto& house : m_Houses)
 	{
-		house.second.timeSinceLastVisit += dt;
+		if (house.second.visited)
+		{
+			house.second.timeSinceLastVisit += dt;
+		}
+		if (house.second.timeSinceLastVisit > m_TimeForRevisit)
+		{
+			house.second.visited = false;
+		}
 	}
 }
 
@@ -24,17 +31,16 @@ bool HouseMemory::IsHouseInMemory(const HouseInfo& house)
 
 void HouseMemory::AddHouse(const HouseInfo& house)
 {
-	RememberedHouse newHouse{};
-	newHouse.center = house.Center;
-	newHouse.size = house.Size;
-	newHouse.timeSinceLastVisit = 0.f; // Variable needs to be higher than revisit triggering float, otherwise house will be remembered but not visited
+	RememberedHouse newHouse{house};
 	
 	m_Houses.emplace(ConvertHousePosToKey(house.Center), newHouse);
 }
 
 void HouseMemory::SetHouseToVisited(const HouseInfo& house)
 {
-	m_Houses.at(ConvertHousePosToKey(house.Center)).timeSinceLastVisit = 0.f;
+	auto& rememberedHouse{ m_Houses.at(ConvertHousePosToKey(house.Center)) };
+	rememberedHouse.visited = true;
+	rememberedHouse.timeSinceLastVisit = 0.f;
 }
 
 RememberedHouse HouseMemory::GetRememberedHouse(const HouseInfo& house)

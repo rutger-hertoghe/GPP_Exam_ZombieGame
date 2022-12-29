@@ -14,6 +14,7 @@ namespace Elite
 class AgentMemory;
 class AgentFOV;
 class AgentMovement;
+class AgentInventory;
 
 // using namespace Elite;
 
@@ -48,11 +49,16 @@ private:
 
 	// OWN IMPLEMENTATIONS
 	// Elite::Blackboard* m_pBlackboard;
+	Elite::Vector2 m_Target;
+
 	Elite::Blackboard* CreateBlackboard();
+	//-----------------------
+	// AGENT MODULES
 	AgentMemory* m_pAgentMemory;
+	AgentInventory* m_pAgentInventory;
 	AgentFOV* m_pAgentFOV;
 	AgentMovement* m_pAgentMovement;
-	Elite::Vector2 m_Target;
+	//-----------------------
 
 	Elite::IDecisionMaking* m_pDecisionMaking;
 };

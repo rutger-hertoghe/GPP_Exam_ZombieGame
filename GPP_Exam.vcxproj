@@ -183,6 +183,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AgentFOV.h" />
+    <ClInclude Include="AgentInventory.h" />
     <ClInclude Include="AgentMemory.h" />
     <ClInclude Include="AgentMovement.h" />
     <ClInclude Include="BT_Behaviors.h" />
@@ -198,8 +199,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AgentFOV.cpp" />
+    <ClCompile Include="AgentInventory.cpp" />
     <ClCompile Include="AgentMemory.cpp" />
     <ClCompile Include="AgentMovement.cpp" />
+    <ClCompile Include="CustomStructs.cpp" />
     <ClCompile Include="EBehaviorTree.cpp" />
     <ClCompile Include="ExplorationMemory.cpp" />
     <ClCompile Include="HouseMemory.cpp" />

@@ -10,6 +10,7 @@
 #include "AgentFOV.h"
 #include "AgentMovement.h"
 #include "HouseMemory.h"
+#include "AgentInventory.h"
 
 using namespace std;
 using namespace Elite;
@@ -27,12 +28,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	//This interface gives you access to certain actions the AI_Framework can perform for you
 	m_pInterface = static_cast<IExamInterface*>(pInterface);
 
-	HouseInfo testHouse{};
-	testHouse.Center = { 100.f, 100.f };
-
-	HouseMemory testHouseMemory{};
-	testHouseMemory.IsHouseInMemory(testHouse);
-
 	//Bit information about the plugin
 	//Please fill this in!!
 	info.BotName = "Sloeber";
@@ -41,9 +36,17 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	info.Student_Class = "2DAE07";
 
 	m_pAgentFOV = new AgentFOV{ m_pInterface };
-	m_pAgentMovement = new AgentMovement{m_pInterface};
+	m_pAgentMovement = new AgentMovement{ m_pInterface };
+	m_pAgentInventory = new AgentInventory{ m_pInterface };
 
-	ExplorationMemory* explorationMem{new ExplorationMemory(m_pInterface->World_GetInfo().Center, m_pInterface->World_GetInfo().Dimensions, 10)};
+	ExplorationMemory* explorationMem
+	{
+		new ExplorationMemory(
+		m_pInterface->World_GetInfo().Center, 
+		m_pInterface->World_GetInfo().Dimensions, 
+		m_pInterface->Agent_GetInfo().FOV_Range,
+		10)
+	};
 	HouseMemory* houseMemory{ new HouseMemory{} };
 	m_pAgentMemory = new AgentMemory{ explorationMem, houseMemory };
 
@@ -63,33 +66,56 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 		new BehaviorSequence{std::vector<IBehavior*>
 		{
 			new BehaviorConditional{BT_Conditions::EnemyInFOV},
-			new BehaviorAction{BT_Actions::FleeFacingTarget}
+			new BehaviorAction{BT_Actions::FleeFacingTarget},
+			new BehaviorSelector{std::vector<IBehavior*>{
+				new BehaviorAction{BT_Actions::UseShotgun},
+				new BehaviorAction{BT_Actions::UsePistol}
+			}}
 		}}
 	};
 
-	BehaviorSequence* houseInFovRoutine
+	BehaviorSequence* itemGrabRoutine
+	{
+		new BehaviorSequence{std::vector<IBehavior*>{
+			new BehaviorAction{BT_Actions::GetClosestItemInFOV},
+			new BehaviorSelector{std::vector<IBehavior*>{
+				new BehaviorSequence{std::vector<IBehavior*>{
+					new BehaviorConditional{BT_Conditions::ItemInGrabbingRange},
+					new BehaviorAction{BT_Actions::GrabItem}
+				}},
+				new BehaviorAction{BT_Actions::ApproachItem}
+			}},
+		}}
+	};
+
+	//BehaviorSequence* houseRoutine
+	//{
+	//	new BehaviorSequence{std::vector<IBehavior*>
+	//	{
+	//		new BehaviorConditional{BT_Conditions::FoundHouseUnvisited},
+	//		new BehaviorAction{BT_Actions::EnterHouse},
+	//		new BehaviorAction{BT_Actions::InsideHouse},
+	//		// new BehaviorAction{BT_Actions::Explore}
+	//	}}
+	//};
+
+	BehaviorSequence* houseRoutine
 	{
 		new BehaviorSequence{std::vector<IBehavior*>
 		{
-			new BehaviorConditional{BT_Conditions::HouseInFOV},
-			new BehaviorSelector{std::vector<IBehavior*>
-			{
-				new BehaviorSequence{std::vector<IBehavior*>{
-					new BehaviorConditional{BT_Conditions::HouseInMemory},
-					new BehaviorConditional{BT_Conditions::HouseNeedsRevisit},
-					new BehaviorAction{BT_Actions::EnterHouse}
-				}},
-				new BehaviorAction{BT_Actions::MemoriseHouse}
-			}}
+			new BehaviorAction{BT_Actions::GetClosestUnvisitedHouseInFOV},
+			new BehaviorConditional{BT_Conditions::FoundHouseUnvisited},
+			new BehaviorAction{BT_Actions::EnterHouse}
 		}}
 	};
 
 	Elite::IBehavior* pRootNode{
 		new BehaviorSelector{std::vector<IBehavior*>
 		{
-			houseInFovRoutine,
-			//zombieInFovRoutine,
-			exploringRoutine
+			zombieInFovRoutine,
+			itemGrabRoutine,
+			houseRoutine,
+			new BehaviorAction{BT_Actions::Explore}
 		}}
 	};
 
@@ -100,6 +126,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 void Plugin::DllInit()
 {
 	//Called when the plugin is loaded
+	
 }
 
 //Called only once
@@ -120,75 +147,75 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.AutoGrabClosestItem = true; //A call to Item_Grab(...) returns the closest item that can be grabbed. (EntityInfo argument is ignored)
 	params.StartingDifficultyStage = 1;
 	params.InfiniteStamina = false;
-	params.SpawnDebugPistol = true;
-	params.SpawnDebugShotgun = true;
+	params.SpawnDebugPistol = false;
+	params.SpawnDebugShotgun = false;
 	params.SpawnPurgeZonesOnMiddleClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 36;
+	params.Seed = 40;
 }
 
 //Only Active in DEBUG Mode
 //(=Use only for Debug Purposes)
 void Plugin::Update(float dt)
 {
-	//Demo Event Code
-	//In the end your AI should be able to walk around without external input
-	if (m_pInterface->Input_IsMouseButtonUp(Elite::InputMouseButton::eLeft))
-	{
-		//Update target based on input
-		Elite::MouseData mouseData = m_pInterface->Input_GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
-		const Elite::Vector2 pos = Elite::Vector2(static_cast<float>(mouseData.X), static_cast<float>(mouseData.Y));
-		//m_Target = m_pInterface->Debug_ConvertScreenToWorld(pos);
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Space))
-	{
-		m_CanRun = true;
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Left))
-	{
-		m_AngSpeed -= Elite::ToRadians(10);
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Right))
-	{
-		m_AngSpeed += Elite::ToRadians(10);
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_G))
-	{
-		m_GrabItem = true;
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_U))
-	{
-		m_UseItem = true;
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_R))
-	{
-		m_RemoveItem = true;
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyUp(Elite::eScancode_Space))
-	{
-		m_CanRun = false;
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Delete))
-	{
-		m_pInterface->RequestShutdown();
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_M))
-	{
-		if (m_InventorySlot > 0)
-			--m_InventorySlot;
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_P))
-	{
-		if (m_InventorySlot < 4)
-			++m_InventorySlot;
-	}
-	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Q))
-	{
-		ItemInfo info = {};
-		m_pInterface->Inventory_GetItem(m_InventorySlot, info);
-		std::cout << (int)info.Type << std::endl;
-	}
+	////Demo Event Code
+	////In the end your AI should be able to walk around without external input
+	//if (m_pInterface->Input_IsMouseButtonUp(Elite::InputMouseButton::eLeft))
+	//{
+	//	//Update target based on input
+	//	Elite::MouseData mouseData = m_pInterface->Input_GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
+	//	const Elite::Vector2 pos = Elite::Vector2(static_cast<float>(mouseData.X), static_cast<float>(mouseData.Y));
+	//	//m_Target = m_pInterface->Debug_ConvertScreenToWorld(pos);
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Space))
+	//{
+	//	m_CanRun = true;
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Left))
+	//{
+	//	m_AngSpeed -= Elite::ToRadians(10);
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Right))
+	//{
+	//	m_AngSpeed += Elite::ToRadians(10);
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_G))
+	//{
+	//	m_GrabItem = true;
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_U))
+	//{
+	//	m_UseItem = true;
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_R))
+	//{
+	//	m_RemoveItem = true;
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyUp(Elite::eScancode_Space))
+	//{
+	//	m_CanRun = false;
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Delete))
+	//{
+	//	m_pInterface->RequestShutdown();
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_M))
+	//{
+	//	if (m_InventorySlot > 0)
+	//		--m_InventorySlot;
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_P))
+	//{
+	//	if (m_InventorySlot < 4)
+	//		++m_InventorySlot;
+	//}
+	//else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Q))
+	//{
+	//	ItemInfo info = {};
+	//	m_pInterface->Inventory_GetItem(m_InventorySlot, info);
+	//	std::cout << (int)info.Type << std::endl;
+	//}
 }
 
 //Update
@@ -289,6 +316,8 @@ Elite::Blackboard* Plugin::CreateBlackboard()
 	pBlackboard->AddData("AgentMemory", m_pAgentMemory);
 	pBlackboard->AddData("AgentFOV", m_pAgentFOV);
 	pBlackboard->AddData("AgentMovement", m_pAgentMovement);
-	pBlackboard->AddData("House", static_cast<HouseInfo*>(nullptr));
+	pBlackboard->AddData("House", HouseInfo{});
+	pBlackboard->AddData("Item", EntityInfo{});
+	pBlackboard->AddData("Inventory", m_pAgentInventory);
 	return pBlackboard;
 }

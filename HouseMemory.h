@@ -15,7 +15,8 @@ public:
 	RememberedHouse GetRememberedHouse(const HouseInfo& house);
 
 private:
+	const float m_TimeForRevisit{ 100.f };
 	std::unordered_map<long int, RememberedHouse> m_Houses;
-	long int ConvertHousePosToKey(const Elite::Vector2& houseCenter);
+	static long int ConvertHousePosToKey(const Elite::Vector2& houseCenter);
 };
 

@@ -24,6 +24,10 @@
     <ClCompile Include="HouseMemory.cpp">
       <Filter>Own Files\AgentMemory</Filter>
     </ClCompile>
+    <ClCompile Include="AgentInventory.cpp">
+      <Filter>Own Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CustomStructs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Plugin.h" />
@@ -60,6 +64,9 @@
     </ClInclude>
     <ClInclude Include="HouseMemory.h">
       <Filter>Own Files\AgentMemory</Filter>
+    </ClInclude>
+    <ClInclude Include="AgentInventory.h">
+      <Filter>Own Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include "ExplorationMemory.h"
 
-ExplorationMemory::ExplorationMemory(const Elite::Vector2& worldCenter, const Elite::Vector2& worldSize, int divisionsPerDim)
+ExplorationMemory::ExplorationMemory(const Elite::Vector2& worldCenter, const Elite::Vector2& worldSize, float arrivalRange, int divisionsPerDim)
+	: m_ArrivalRange(arrivalRange)
 {
 	m_CellDims = {worldSize.x / divisionsPerDim,  worldSize.y / divisionsPerDim };
 	Elite::Vector2 worldOrigin{ worldCenter.x - worldSize.x, worldCenter.y - worldSize.y };
@@ -56,7 +57,7 @@ bool ExplorationMemory::ArrivedInCell(const AgentInfo& agent)
 {
 	// TODO: Link arrival to FOV cone instead of being inside cell
 	Elite::Vector2 agentPos{ agent.Position };
-	if (abs(agentPos.x - m_CurrentTarget.x) < m_CellDims.x / 2 && abs(agentPos.y - m_CurrentTarget.y) < m_CellDims.y /2)
+	if (DistanceSquared(agentPos, m_CurrentTarget) < m_ArrivalRange * m_ArrivalRange )
 	{
 		std::cout << "ARRIVED IN CELL!\n";
 		return true;
