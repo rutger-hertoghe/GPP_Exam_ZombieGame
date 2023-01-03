@@ -11,7 +11,9 @@ void HouseMemory::Update(float dt)
 		}
 		if (house.second.timeSinceLastVisit > m_TimeForRevisit)
 		{
+			house.second.timeSinceLastVisit = 0.f;
 			house.second.visited = false;
+			house.second.GenerateWayPoints();
 		}
 	}
 }
@@ -54,12 +56,46 @@ RememberedHouse& HouseMemory::GetRememberedHouseREF(const HouseInfo& house)
 	return m_Houses.at(ConvertHousePosToKey(house.Center));
 }
 
+HouseInfo HouseMemory::GetClosestUnvisitedRememberedHouse(const Elite::Vector2& pos) const
+{
+	float minDist{ FLT_MAX };
+	HouseInfo foundHouse{};
+	for(const auto& house : m_Houses)
+	{
+		if(house.second.visited)
+		{
+			continue;
+		}
+
+		const float distHousePosSQ{ DistanceSquared(house.second.center, pos) };
+		if(distHousePosSQ < minDist)
+		{
+			minDist = distHousePosSQ;
+			foundHouse.Center = house.second.center;
+			foundHouse.Size = house.second.size;
+		}
+	}
+	return foundHouse;
+}
+
+bool HouseMemory::DoesAnyHouseNeedRevisit() const
+{
+	for(const auto & house : m_Houses)
+	{
+		if(house.second.visited == false)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 long int HouseMemory::ConvertHousePosToKey(const Elite::Vector2& houseCenter)
 {
 	long int key{};
 	long int keyP1{ static_cast<long int>(houseCenter.x) };
 	long int keyP2{ static_cast<long int>(houseCenter.y) };
 	keyP2 <<= sizeof(int);
-	key = keyP1 & keyP2;
+	key = keyP1 | keyP2;
 	return key;
 }

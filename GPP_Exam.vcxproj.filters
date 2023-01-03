@@ -27,7 +27,12 @@
     <ClCompile Include="AgentInventory.cpp">
       <Filter>Own Files</Filter>
     </ClCompile>
-    <ClCompile Include="CustomStructs.cpp" />
+    <ClCompile Include="DecisionModule.cpp">
+      <Filter>Own Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CustomStructs.cpp">
+      <Filter>Own Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Plugin.h" />
@@ -68,6 +73,9 @@
     <ClInclude Include="AgentInventory.h">
       <Filter>Own Files</Filter>
     </ClInclude>
+    <ClInclude Include="DecisionModule.h">
+      <Filter>Own Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Framework Files">
@@ -82,5 +90,8 @@
     <Filter Include="Own Files\Movement">
       <UniqueIdentifier>{37450988-ccae-467b-b436-9cc3a1847edb}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="TASKLIST.txt" />
   </ItemGroup>
 </Project>

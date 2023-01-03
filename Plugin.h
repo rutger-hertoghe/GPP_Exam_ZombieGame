@@ -8,13 +8,14 @@ class IExamInterface;
 namespace Elite 
 {
 	class Blackboard;
-	class IDecisionMaking;
+	//class IDecisionMaking;
 }
 
 class AgentMemory;
 class AgentFOV;
 class AgentMovement;
 class AgentInventory;
+class DecisionModule;
 
 // using namespace Elite;
 
@@ -39,13 +40,13 @@ private:
 	//Interface, used to request data from/perform actions with the AI Framework
 	IExamInterface* m_pInterface = nullptr;
 
-	bool m_CanRun = false; //Demo purpose
-	bool m_GrabItem = false; //Demo purpose
-	bool m_UseItem = false; //Demo purpose
-	bool m_RemoveItem = false; //Demo purpose
-	float m_AngSpeed = 0.f; //Demo purpose
+	//bool m_CanRun = false; //Demo purpose
+	//bool m_GrabItem = false; //Demo purpose
+	//bool m_UseItem = false; //Demo purpose
+	//bool m_RemoveItem = false; //Demo purpose
+	//float m_AngSpeed = 0.f; //Demo purpose
 
-	UINT m_InventorySlot = 0;
+	// UINT m_InventorySlot = 0;
 
 	// OWN IMPLEMENTATIONS
 	// Elite::Blackboard* m_pBlackboard;
@@ -58,9 +59,8 @@ private:
 	AgentInventory* m_pAgentInventory;
 	AgentFOV* m_pAgentFOV;
 	AgentMovement* m_pAgentMovement;
+	DecisionModule* m_pDecisionModule;
 	//-----------------------
-
-	Elite::IDecisionMaking* m_pDecisionMaking;
 };
 
 //ENTRY

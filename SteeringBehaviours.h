@@ -40,6 +40,14 @@ public:
 	virtual SteeringPlugin_Output CalculateSteering(float deltaTime, const AgentInfo& agent) override;
 };
 
+class SprintSeekScan : public SeekAndScan
+{
+public:
+	SprintSeekScan() = default;
+	virtual ~SprintSeekScan() = default;
+	virtual SteeringPlugin_Output CalculateSteering(float deltaTime, const AgentInfo& agent) override;
+};
+
 class Flee : public SteeringBehaviour
 {
 public:

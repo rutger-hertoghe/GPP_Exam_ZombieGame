@@ -12,7 +12,5 @@ struct RememberedHouse
 	float timeSinceLastVisit;
 	bool visited;
 	std::vector<Elite::Vector2> m_WayPoints;
-
-private:
 	void GenerateWayPoints();
 };

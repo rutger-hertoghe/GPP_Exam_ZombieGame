@@ -6,6 +6,7 @@ class Flee;
 class Wander;
 class SeekAndScan;
 class SprintSeek;
+class SprintSeekScan;
 class SteeringBehaviour;
 class IExamInterface;
 
@@ -22,6 +23,7 @@ public:
 	void SetToSeek(const Elite::Vector2& target, bool useNavMesh = true);
 	//void SetToSeekAndScan(const Elite::Vector2& target, bool useNavMesh = true);
 	void SetToSeekAndScan(bool useNavMesh = true);
+	void SetToSSS(bool useNavMesh = true);
 	void SetToSprintSeek(bool useNavMesh = true);
 	void SetToSprintSeek(const Elite::Vector2& target, bool useNavMesh = true);
 	void SetToFlee(const Elite::Vector2& target, bool useNavMesh = true, bool faceTarget = false);
@@ -31,8 +33,6 @@ public:
 	void SetUseNavMesh(bool useNavMesh);
 
 	bool GetShouldScan();
-
-	//TODO: maybe use combined steering (seek + wander) while exploring map
 
 private:
 	bool m_useNavMesh;
@@ -49,6 +49,8 @@ private:
 	Wander* m_pWander;
 	SeekAndScan* m_pSeekAndScan;
 	SprintSeek* m_pSprintSeek;
+	SprintSeekScan* m_pSSS;
+
 	IExamInterface* m_pInterface; // Owned by Plugin so no deletion in destructor
 };
 

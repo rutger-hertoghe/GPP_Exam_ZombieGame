@@ -112,3 +112,10 @@ SteeringPlugin_Output SprintSeek::CalculateSteering(float deltaTime, const Agent
     steering.RunMode = true;
     return steering;
 }
+
+SteeringPlugin_Output SprintSeekScan::CalculateSteering(float deltaTime, const AgentInfo& agent)
+{
+    SteeringPlugin_Output steering{ SeekAndScan::CalculateSteering(deltaTime, agent) };
+    steering.RunMode = true;
+    return steering;
+}

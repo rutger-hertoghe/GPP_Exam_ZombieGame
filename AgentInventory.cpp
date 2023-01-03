@@ -14,92 +14,60 @@ AgentInventory::AgentInventory(IExamInterface* pInterface)
 
 bool AgentInventory::PickUpItem(const EntityInfo& itemEntityInfo)
 {
+	// Not an item
 	if (itemEntityInfo.Type != eEntityType::ITEM)
 	{
 		std::cout << "Tried to pick up non-item!!\n";
 		return false;
 	}
 
-	ItemInfo grabbedItem;
-	m_pInterface->Item_Grab(itemEntityInfo, grabbedItem);
-
-	/*switch(grabbedItem.Type)
+	// Item is garbage
+	ItemInfo itemInfo;
+	m_pInterface->Item_GetInfo(itemEntityInfo, itemInfo);
+	if(itemInfo.Type == eItemType::GARBAGE)
 	{
-	case eItemType::GARBAGE:
 		m_pInterface->Item_Destroy(itemEntityInfo);
-		break;
-	case eItemType::PISTOL:
-		const UINT pistolSlot{ FindSlotWithItem(eItemType::PISTOL) };
-		if(pistolSlot != m_NrSlots)
-		{
-			ItemInfo currentPistol;
-			m_pInterface->Inventory_GetItem(pistolSlot, currentPistol);
-			if (m_pInterface->Weapon_GetAmmo(grabbedItem) > m_pInterface->Weapon_GetAmmo(currentPistol))
-			{
-				m_pInterface->Inventory_RemoveItem(pistolSlot);
-				m_pInterface->Inventory_AddItem(pistolSlot, grabbedItem);
-			}
-			break;
-		}
-		
-	}*/
-
-	UINT emptySlot{ GetFirstEmptySlot()};
-	if (emptySlot == m_NrSlots)
-	{
-		std::cout << "Inventory is full!\n";
 		return false;
 	}
 
-	if (m_pInterface->Inventory_AddItem(emptySlot, grabbedItem))
+	// Inventory is full
+	UINT emptySlot{ GetFirstEmptySlot()};
+	if (emptySlot == m_NrSlots)
 	{
-		m_Items[emptySlot] = grabbedItem.Type;
-		if (grabbedItem.Type == eItemType::GARBAGE)
+		if(HasItem(itemInfo.Type))
 		{
-			RemoveItem(emptySlot);
+			emptySlot = GetLowestQualityDuplicateOfItem(itemInfo);
 		}
-		return true;
+		else
+		{
+			emptySlot = GetLowestQualityDuplicateOfItem(GetItemWithHighestQuantity());
+		}
+
+		if(emptySlot == m_NrSlots) // If lowest quality item is the one in hand, return
+		{
+			return false;
+		}
+		ItemInfo itemToDelete;
+		m_pInterface->Inventory_GetItem(emptySlot, itemToDelete);
+		if (itemToDelete.Type == eItemType::FOOD || itemToDelete.Type == eItemType::MEDKIT)
+		{
+			m_pInterface->Inventory_UseItem(emptySlot);
+		}
+		RemoveItem(emptySlot);
 	}
 
-	
-	std::cout << "Item not added to inventory\n";
-	return false;
+	// Add item to inventory
+	return AddItem(emptySlot, itemEntityInfo);
 }
 
 bool AgentInventory::UsePistol()
 {
-	UINT pistolSlot{ FindSlotWithItem(eItemType::PISTOL) };
-	if (pistolSlot == m_NrSlots)
-	{
-		std::cout << "No pistol equipped!\n";
-		return false;
-	}
-
-	bool hasShot{ m_pInterface->Inventory_UseItem(pistolSlot) };
-	if (!hasShot)
-	{
-		std::cout << "Out of ammo!\n";
-		RemoveItem(pistolSlot);
-	}
-	return hasShot;
+	return UseItem(eItemType::PISTOL);
 }
 
 bool AgentInventory::UseShotgun()
 {
-	UINT shotgunSlot{ FindSlotWithItem(eItemType::SHOTGUN) };
-	if (shotgunSlot == m_NrSlots)
-	{
-		std::cout << "No shotgun equipped!\n";
-		return false;
-	}
-
-	bool hasShot{ m_pInterface->Inventory_UseItem(shotgunSlot) };
-	if (!hasShot)
-	{
-		std::cout << "Out of ammo!\n";
-		RemoveItem(shotgunSlot);
-	}
-	return hasShot;
+	return UseItem(eItemType::SHOTGUN);
 }
 
 bool AgentInventory::HasItem(eItemType itemType)
@@ -113,20 +81,41 @@ bool AgentInventory::HasItem(eItemType itemType)
 
 bool AgentInventory::UseFood()
 {
-	UINT foodSlot{ FindSlotWithItem(eItemType::FOOD) };
-	if(foodSlot == m_NrSlots)
+	return UseItem(eItemType::FOOD);
+}
+
+bool AgentInventory::UseMedkit()
+{
+	return UseItem(eItemType::MEDKIT);
+}
+
+bool AgentInventory::UseItem(eItemType itemType)
+{
+	const UINT itemSlot{ FindSlotWithItem(itemType) };
+	if (itemSlot == m_NrSlots)
 	{
 		return false;
 	}
 
-	ItemInfo itemInfo;
-	m_pInterface->Inventory_GetItem(foodSlot, itemInfo);
+	const bool usedItem{ m_pInterface->Inventory_UseItem(itemSlot) };
 
-	std::cout << "Using food \n";
-	bool usedFood{ m_pInterface->Inventory_UseItem(foodSlot) };
-	RemoveItem(foodSlot);
-	
-	return usedFood;
+	switch(itemType)
+	{
+	case eItemType::MEDKIT:
+	case eItemType::FOOD:
+		RemoveItem(itemSlot);
+		return usedItem;
+
+	case eItemType::SHOTGUN:
+	case eItemType::PISTOL:
+		if (!usedItem)
+		{
+			std::cout << "Out of ammo!\n";
+			RemoveItem(itemSlot);
+		}
+		return usedItem;
+	}
+	return false;
 }
 
 UINT AgentInventory::GetFirstEmptySlot()
@@ -153,8 +142,118 @@ UINT AgentInventory::FindSlotWithItem(eItemType itemType)
 	return m_NrSlots;
 }
 
-void AgentInventory::RemoveItem(UINT slot)
+bool AgentInventory::AddItem(UINT itemSlot, const EntityInfo& itemEntityInfo)
 {
+	// Grab for further interaction
+	ItemInfo grabbedItem;
+	m_pInterface->Item_Grab(itemEntityInfo, grabbedItem);
+	if (m_pInterface->Inventory_AddItem(itemSlot, grabbedItem))
+	{
+		m_Items[itemSlot] = grabbedItem.Type;
+		return true;
+	}
+
+	std::cout << "Item not added to inventory\n";
+	return false;
+}
+
+bool AgentInventory::RemoveItem(UINT slot)
+{
+	if(slot == m_NrSlots)
+	{
+		return false;
+	}
+
 	m_pInterface->Inventory_RemoveItem(slot);
 	m_Items[slot] = eItemType::RANDOM_DROP;
+	return true;
+}
+
+eItemType AgentInventory::GetItemWithHighestQuantity()
+{
+	std::vector<int> quantities;
+	quantities.resize(4);
+	for(auto& itemType : m_Items)
+	{
+		switch(itemType)
+		{
+		case eItemType::PISTOL:
+		case eItemType::SHOTGUN:
+		case eItemType::MEDKIT:
+		case eItemType::FOOD:
+			++quantities[static_cast<int>(itemType)];
+			break;
+		default:
+			break;
+		}
+	}
+	return static_cast<eItemType>(std::distance(begin(quantities), std::max_element(begin(quantities), end(quantities))));
+}
+
+int AgentInventory::GetItemQuality(ItemInfo itemInfo) const
+{
+	switch(itemInfo.Type)
+	{
+	case eItemType::FOOD:
+		return m_pInterface->Food_GetEnergy(itemInfo);
+	case eItemType::SHOTGUN:
+	case eItemType::PISTOL:
+		return m_pInterface->Weapon_GetAmmo(itemInfo);
+	case eItemType::MEDKIT:
+		return m_pInterface->Medkit_GetHealth(itemInfo);
+	default:
+		return 0;
+	}
+}
+
+std::vector<UINT> AgentInventory::GetAllSlotsWithItem(eItemType itemType) const
+{
+	std::vector<UINT> slotsWithItem{};
+	for(UINT slot{0}; slot < m_NrSlots; ++slot)
+	{
+		if(m_Items[slot] == itemType)
+		{
+			slotsWithItem.push_back(slot);
+		}
+	}
+	return slotsWithItem;
+}
+
+UINT AgentInventory::GetLowestQualityDuplicateOfItem(const ItemInfo& grabbedItem)
+{
+	const auto itemSlots{ GetAllSlotsWithItem(grabbedItem.Type) };
+	ItemInfo lowestQualityItem{ grabbedItem };
+	UINT lowQslot{ m_NrSlots };
+	for(const auto& slot : itemSlots)
+	{
+		ItemInfo itemToCheck;
+		m_pInterface->Inventory_GetItem(slot, itemToCheck);
+		if(GetItemQuality(itemToCheck) < GetItemQuality(lowestQualityItem))
+		{
+			lowestQualityItem = itemToCheck;
+			lowQslot = slot;
+		}
+	}
+
+	return lowQslot;
+}
+
+UINT AgentInventory::GetLowestQualityDuplicateOfItem(eItemType itemType)
+{
+	const auto itemSlots{ GetAllSlotsWithItem(itemType) };
+	ItemInfo lowestQualityItem{};
+	m_pInterface->Inventory_GetItem(itemSlots[0], lowestQualityItem);
+	UINT lowQslot{ 0 };
+	for (const auto& slot : itemSlots)
+	{
+		ItemInfo itemToCheck;
+		m_pInterface->Inventory_GetItem(slot, itemToCheck);
+		if (GetItemQuality(itemToCheck) < GetItemQuality(lowestQualityItem))
+		{
+			lowestQualityItem = itemToCheck;
+			lowQslot = slot;
+		}
+	}
+
+	return lowQslot;
 }

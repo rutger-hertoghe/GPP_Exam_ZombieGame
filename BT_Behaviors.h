@@ -1,7 +1,7 @@
 #pragma once
 #include "EBehaviorTree.h"
 #include "Exam_HelperStructs.h"
-#include "SteeringBehaviours.h"
+#include "IExamInterface.h"
 #include "ExplorationMemory.h"
 #include "AgentMemory.h"
 #include "AgentFOV.h"
@@ -13,8 +13,6 @@ using namespace Elite;
 
 #define BS_RETRIEVE_AND_VALIDATE(name, data) isValid = pBlackboard->GetData(name, data); if(!isValid){std::cout << VAR_NAME(data) << " in " << __func__ << " was invalid!\n"; return BehaviorState::Failure;}
 #define BC_RETRIEVE_AND_VALIDATE(name, data) isValid = pBlackboard->GetData(name, data); if(!isValid){std::cout << VAR_NAME(data) << " in " << __func__ << " was invalid!\n"; return false;}
-
-// TODO: Make house memory functions accept HouseInfo pointers instead of dereferencing pHouse(Info)??
 
 namespace BT_Actions
 {
@@ -132,11 +130,6 @@ namespace BT_Actions
 				remHouse.m_WayPoints.pop_back();
 			}
 		}
-
-		/*if (pInterface->Agent_GetInfo().IsInHouse)
-		{
-			pHouseMemory->SetHouseToVisited(houseInfo);
-		}*/
 
 		return BehaviorState::Success;
 	}
@@ -296,10 +289,8 @@ namespace BT_Actions
 		AgentInventory* pInventory;
 		BS_RETRIEVE_AND_VALIDATE("Inventory", pInventory);
 
-		if(pInventory->UseFood())
-		{
-			return BehaviorState::Success;
-		}
+		pInventory->UseFood();
+
 		return BehaviorState::Failure;
 	}
 
@@ -324,7 +315,7 @@ namespace BT_Actions
 		
 	}
 
-	inline BehaviorState SprintToTarget(Blackboard* pBlackboard)
+	inline BehaviorState SprintAway(Blackboard* pBlackboard)
 	{
 		bool isValid{};
 		AgentMovement* pMovement;
@@ -332,6 +323,38 @@ namespace BT_Actions
 
 		pMovement->SetToSprintSeek();
 
+		return BehaviorState::Success;
+	}
+
+	inline BehaviorState UseMedkit(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		AgentInventory* pInventory;
+		BS_RETRIEVE_AND_VALIDATE("Inventory", pInventory);
+
+		pInventory->UseMedkit();
+
+		return BehaviorState::Failure;
+	}
+
+	inline BehaviorState GetClosestUnvisitedHouseInMemory(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+		AgentMemory* pMemory;
+		BS_RETRIEVE_AND_VALIDATE("AgentMemory", pMemory);
+
+		IExamInterface* pInterface;
+		BS_RETRIEVE_AND_VALIDATE("Interface", pInterface);
+
+		if(!pMemory->GetHouseMemory()->DoesAnyHouseNeedRevisit())
+		{
+			return BehaviorState::Failure;
+		}
+
+		const auto houseInfo{ pMemory->GetHouseMemory()->GetClosestUnvisitedRememberedHouse(pInterface->Agent_GetInfo().Position) };
+
+		pBlackboard->ChangeData("House", houseInfo);
 		return BehaviorState::Success;
 	}
 }
@@ -437,7 +460,7 @@ namespace BT_Conditions
 		const float angleToEnemy{ atan2f(vecToEnemy.y, vecToEnemy.x) };
 		const float angleOfAgent{ pInterface->Agent_GetInfo().Orientation };
 
-		if(abs(angleToEnemy - angleOfAgent) > 0.01f)
+		if(abs(angleToEnemy - angleOfAgent) > 0.015f)
 		{
 			return true;
 		}
@@ -455,6 +478,20 @@ namespace BT_Conditions
 		BC_RETRIEVE_AND_VALIDATE("AgentInventory", pInventory);*/
 
 		if(pInterface->Agent_GetInfo().Energy < 1.f /*&& pInventory->HasItem(eItemType::FOOD)*/)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	inline bool CouldUseMedkit(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		IExamInterface* pInterface;
+		BC_RETRIEVE_AND_VALIDATE("Interface", pInterface);
+
+		if(pInterface->Agent_GetInfo().Health < 8.f)
 		{
 			return true;
 		}
@@ -511,6 +548,43 @@ namespace BT_Conditions
 			}
 		}
 		return false;
+	}
+
+	inline bool HasGun(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		AgentInventory* pInventory;
+		BC_RETRIEVE_AND_VALIDATE("Inventory", pInventory);
+
+		if(pInventory->HasItem(eItemType::PISTOL) || pInventory->HasItem(eItemType::SHOTGUN))
+		{
+			return true;
+		}
+		return false;
+	}
+
+	inline bool IsDoneExploring(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+		AgentMemory* pMemory;
+		BC_RETRIEVE_AND_VALIDATE("AgentMemory", pMemory);
+
+		return pMemory->GetExplorationMemory()->IsDoneExploring();
+	}
+
+	inline bool IfNoWeaponsOrFood(Blackboard* pBlackboard)
+	{
+		bool isValid{};
+
+		AgentInventory* pInventory;
+		BC_RETRIEVE_AND_VALIDATE("Inventory", pInventory);
+
+		if (pInventory->HasItem(eItemType::FOOD) && (pInventory->HasItem(eItemType::PISTOL) || pInventory->HasItem(eItemType::SHOTGUN)))
+		{
+			return false;
+		}
+		return true;
 	}
 }
 

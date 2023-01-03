@@ -187,6 +187,7 @@
     <ClInclude Include="AgentMemory.h" />
     <ClInclude Include="AgentMovement.h" />
     <ClInclude Include="BT_Behaviors.h" />
+    <ClInclude Include="DecisionModule.h" />
     <ClInclude Include="EBehaviorTree.h" />
     <ClInclude Include="EBlackboard.h" />
     <ClInclude Include="EDecisionMaking.h" />
@@ -203,6 +204,7 @@
     <ClCompile Include="AgentMemory.cpp" />
     <ClCompile Include="AgentMovement.cpp" />
     <ClCompile Include="CustomStructs.cpp" />
+    <ClCompile Include="DecisionModule.cpp" />
     <ClCompile Include="EBehaviorTree.cpp" />
     <ClCompile Include="ExplorationMemory.cpp" />
     <ClCompile Include="HouseMemory.cpp" />
@@ -212,6 +214,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="SteeringBehaviours.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="TASKLIST.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

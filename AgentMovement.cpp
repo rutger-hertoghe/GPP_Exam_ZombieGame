@@ -10,6 +10,7 @@ AgentMovement::AgentMovement(IExamInterface* pInterface)
 	, m_pWander{new Wander{}}
 	, m_pSeekAndScan{new SeekAndScan{}}
 	, m_pSprintSeek{new SprintSeek{}}
+	, m_pSSS{new SprintSeekScan{}}
 	, m_Target{ 0.f, 0.f }
 	, m_useNavMesh{ true }
 	, m_ShouldScan{true}
@@ -27,6 +28,7 @@ AgentMovement::~AgentMovement()
 	SAFE_DELETE(m_pWander);
 	SAFE_DELETE(m_pSeekAndScan);
 	SAFE_DELETE(m_pSprintSeek);
+	SAFE_DELETE(m_pSSS)
 }
 
 void AgentMovement::Update(float dt)
@@ -59,8 +61,6 @@ SteeringPlugin_Output AgentMovement::CalculateSteering(float dt, const AgentInfo
 
 	m_pInterface->Draw_Circle(m_Target, 2.f, { 0.5f, 0.5f, 0.f });
 
-	// TODO: Fleeing from zombie doesn't properly work due to the nav mesh stuff
-	// Not sure if this is still the case, it looks pretty fine
 	if (m_useNavMesh)
 	{
 		Elite::Vector2 navMeshTarget{ m_pInterface->NavMesh_GetClosestPathPoint(m_Target) };
@@ -85,8 +85,15 @@ void AgentMovement::SetToSeek(const Elite::Vector2& target, bool useNavMesh)
 
 void AgentMovement::SetToSeekAndScan( bool useNavMesh)
 {
+	m_ShouldScan = true;
 	SetUseNavMesh(useNavMesh);
 	m_pCurrentSteeringBehaviour = m_pSeekAndScan;
+}
+
+void AgentMovement::SetToSSS(bool useNavMesh)
+{
+	SetUseNavMesh(useNavMesh);
+	m_pCurrentSteeringBehaviour = m_pSSS;
 }
 
 void AgentMovement::SetToSprintSeek(bool useNavMesh)
@@ -114,8 +121,6 @@ void AgentMovement::SetToWander()
 	SetUseNavMesh(false);
 	m_pCurrentSteeringBehaviour = m_pWander;
 }
-
-
 
 void AgentMovement::SetUseNavMesh(bool useNavMesh)
 {

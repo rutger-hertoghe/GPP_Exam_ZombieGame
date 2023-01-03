@@ -11,9 +11,12 @@ public:
 
 	void Update(float dt, const AgentInfo& agent);
 	Elite::Vector2 GetCurrentTarget();
+	bool IsDoneExploring();
+	const std::vector<Elite::Vector2>& GetExplorationPoints() const;
 
 private:
 	const float m_ArrivalRange;
+	bool m_IsDoneExploring;
 
 	Elite::Vector2 m_CurrentTarget;
 	Elite::Vector2 m_CellDims;

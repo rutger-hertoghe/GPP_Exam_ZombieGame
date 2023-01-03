@@ -14,10 +14,13 @@ public:
 	void SetHouseToVisited(const HouseInfo& house);
 	RememberedHouse GetRememberedHouse(const HouseInfo& house);
 	RememberedHouse& GetRememberedHouseREF(const HouseInfo& house);
+	HouseInfo GetClosestUnvisitedRememberedHouse(const Elite::Vector2& pos) const;
+	bool DoesAnyHouseNeedRevisit() const;
 
 private:
-	const float m_TimeForRevisit{ 100.f };
+	const float m_TimeForRevisit{ 250.f };
 	std::unordered_map<long int, RememberedHouse> m_Houses;
 	static long int ConvertHousePosToKey(const Elite::Vector2& houseCenter);
+
 };
 
