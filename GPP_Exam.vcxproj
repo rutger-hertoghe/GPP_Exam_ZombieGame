@@ -182,15 +182,41 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AgentFOV.h" />
+    <ClInclude Include="AgentInventory.h" />
+    <ClInclude Include="AgentMemory.h" />
+    <ClInclude Include="AgentMovement.h" />
+    <ClInclude Include="BT_Behaviors.h" />
+    <ClInclude Include="DecisionModule.h" />
+    <ClInclude Include="EBehaviorTree.h" />
+    <ClInclude Include="EBlackboard.h" />
+    <ClInclude Include="EDecisionMaking.h" />
+    <ClInclude Include="CustomStructs.h" />
+    <ClInclude Include="ExplorationMemory.h" />
+    <ClInclude Include="HouseMemory.h" />
     <ClInclude Include="Plugin.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="SteeringBehaviours.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AgentFOV.cpp" />
+    <ClCompile Include="AgentInventory.cpp" />
+    <ClCompile Include="AgentMemory.cpp" />
+    <ClCompile Include="AgentMovement.cpp" />
+    <ClCompile Include="CustomStructs.cpp" />
+    <ClCompile Include="DecisionModule.cpp" />
+    <ClCompile Include="EBehaviorTree.cpp" />
+    <ClCompile Include="ExplorationMemory.cpp" />
+    <ClCompile Include="HouseMemory.cpp" />
     <ClCompile Include="Plugin.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="SteeringBehaviours.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="TASKLIST.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

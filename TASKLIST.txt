@@ -1,0 +1,11 @@
+1. Bug when facing enemy => Jitter
+2. Bug when no food or no weapon => Go back to exploring instead of finding closest house to revisit (might work correctly? Not sure)
+3. Get rid of error messages in console
+4. General cleanup
+5. Ro5 implementations, coding standards
+6. PRIORITY: Fix item replacement bug
+7. Improve escape purge zone code
+
+X. Optional:
+	- Use combined steering (seek + wander) while exploring map
+	- Remember whether houses still have items in them?

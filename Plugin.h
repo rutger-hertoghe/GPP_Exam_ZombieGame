@@ -5,11 +5,26 @@
 class IBaseInterface;
 class IExamInterface;
 
-class Plugin :public IExamPlugin
+namespace Elite 
+{
+	class Blackboard;
+	//class IDecisionMaking;
+}
+
+class AgentMemory;
+class AgentFOV;
+class AgentMovement;
+class AgentInventory;
+class DecisionModule;
+
+// using namespace Elite;
+
+class Plugin : public IExamPlugin
 {
 public:
+
 	Plugin() {};
-	virtual ~Plugin() {};
+	virtual ~Plugin();
 
 	void Initialize(IBaseInterface* pInterface, PluginInfo& info) override;
 	void DllInit() override;
@@ -24,17 +39,28 @@ public:
 private:
 	//Interface, used to request data from/perform actions with the AI Framework
 	IExamInterface* m_pInterface = nullptr;
-	std::vector<HouseInfo> GetHousesInFOV() const;
-	std::vector<EntityInfo> GetEntitiesInFOV() const;
 
-	Elite::Vector2 m_Target = {};
-	bool m_CanRun = false; //Demo purpose
-	bool m_GrabItem = false; //Demo purpose
-	bool m_UseItem = false; //Demo purpose
-	bool m_RemoveItem = false; //Demo purpose
-	float m_AngSpeed = 0.f; //Demo purpose
+	//bool m_CanRun = false; //Demo purpose
+	//bool m_GrabItem = false; //Demo purpose
+	//bool m_UseItem = false; //Demo purpose
+	//bool m_RemoveItem = false; //Demo purpose
+	//float m_AngSpeed = 0.f; //Demo purpose
 
-	UINT m_InventorySlot = 0;
+	// UINT m_InventorySlot = 0;
+
+	// OWN IMPLEMENTATIONS
+	// Elite::Blackboard* m_pBlackboard;
+	Elite::Vector2 m_Target;
+
+	Elite::Blackboard* CreateBlackboard();
+	//-----------------------
+	// AGENT MODULES
+	AgentMemory* m_pAgentMemory;
+	AgentInventory* m_pAgentInventory;
+	AgentFOV* m_pAgentFOV;
+	AgentMovement* m_pAgentMovement;
+	DecisionModule* m_pDecisionModule;
+	//-----------------------
 };
 
 //ENTRY
