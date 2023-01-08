@@ -76,6 +76,7 @@ void ExplorationMemory::GenerateExplorationPoints(const Elite::Vector2& worldCen
 	constexpr float middleCircleRange{ 180.f };
 	constexpr float outerCircleRange{ 250.f };
 	const float degreeIncrements{ (static_cast<float>(M_PI) * 2) / divisionsPerDim };
+
 	for(int i{0}; i < divisionsPerDim; ++i)
 	{
 		Elite::Vector2 angleVec{cosf(degreeIncrements * i), sinf(degreeIncrements * i)};

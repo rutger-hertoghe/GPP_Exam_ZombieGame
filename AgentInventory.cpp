@@ -32,7 +32,7 @@ bool AgentInventory::PickUpItem(const EntityInfo& itemEntityInfo)
 
 	// Inventory is full
 	UINT emptySlot{ GetFirstEmptySlot()};
-	if (emptySlot == m_NrSlots)
+	if (emptySlot == m_NrSlots) // No empty slots
 	{
 		if(HasItem(itemInfo.Type))
 		{
